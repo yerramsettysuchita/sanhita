@@ -1,0 +1,26 @@
+{# The company evidence uploader, defined once.
+   Used by the evidence screen and by setup step three. Both post to the
+   same /evidence route and run the same parser; this file exists so the
+   two screens cannot drift apart, not so there can be a second uploader. #}
+<form class="dropzone" id="evdrop">
+  <div class="dropzone-in">
+    <div class="dropzone-mark" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16V4"/><path d="M7 9l5-5 5 5"/>
+        <path d="M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/>
+      </svg>
+    </div>
+    <div class="dropzone-h t-subhead">Drop your compliance records here</div>
+    <p class="dropzone-p t-mute">
+      Or <button type="button" class="linkbtn" id="evpick">choose a file</button>.
+      Reports, filing registers, dispatch logs, acknowledgements or
+      certificates. PDF, CSV, XLSX and JSON are all read, and the file stays on
+      this machine.
+    </p>
+    <input type="file" id="evfile"
+           accept=".csv,.json,.xlsx,.pdf,text/csv,application/json,application/pdf"
+           hidden>
+    <div class="dropzone-status" id="evstatus" role="status" aria-live="polite" hidden></div>
+  </div>
+</form>

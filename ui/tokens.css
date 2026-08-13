@@ -1,0 +1,362 @@
+/* ============================================================================
+   SANHITA — DESIGN TOKENS
+   The single source of truth for type, colour, form and motion.
+   Every later phase inherits this file. Nothing here is component-specific.
+
+   Rules that are not negotiable:
+     - No serif typeface anywhere in this product.
+     - --gold means CERTIFIED and nothing else, ever.
+     - Radius 5-10px only. Never pill shapes.
+     - Hairline dividers, not coloured card backgrounds.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- fonts -- */
+
+@font-face{
+  font-family:"Inter Variable";
+  src:url("fonts/InterVariable.woff2") format("woff2-variations"),
+      url("fonts/InterVariable.woff2") format("woff2");
+  font-weight:100 900; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Inter Variable";
+  src:url("fonts/InterVariable-Italic.woff2") format("woff2-variations"),
+      url("fonts/InterVariable-Italic.woff2") format("woff2");
+  font-weight:100 900; font-style:italic; font-display:swap;
+}
+@font-face{
+  font-family:"Inter Display";
+  src:url("fonts/InterDisplay-Regular.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Inter Display";
+  src:url("fonts/InterDisplay-Medium.woff2") format("woff2");
+  font-weight:500; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Inter Display";
+  src:url("fonts/InterDisplay-SemiBold.woff2") format("woff2");
+  font-weight:600; font-style:normal; font-display:swap;
+}
+
+:root{
+  --font:"Inter Variable","Segoe UI Variable Display","Segoe UI",system-ui,
+         -apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  --font-display:"Inter Display",var(--font);
+  /* True monospace is reserved for the two places where character alignment
+     actually carries meaning: verbatim regulation text, and hashes. Everything
+     else that looks tabular (ids, counts, percentages) uses Inter with its
+     tabular figures, which is already switched on globally.
+
+     This matters more than it sounds. An earlier build set 800 elements per
+     screen in --font-mono while JetBrains Mono was never installed, so most of
+     the app rendered in a system fallback and looked like a different, cheaper
+     product than the marketing page. JetBrains Mono stays first in the stack in
+     case it is ever added to ui/fonts, but nothing depends on it. */
+  --font-mono:"JetBrains Mono","SF Mono","Cascadia Mono","Segoe UI Mono",
+              Consolas,"Liberation Mono",ui-monospace,monospace;
+}
+
+/* ---------------------------------------------------------------- colour -- */
+
+:root{
+  /* Raw palette. Near-monochrome with exactly one accent. */
+  --black:#0A0A0A;
+  --near:#121212;
+  --bone:#F6F4F1;
+  --bone-2:#EAE7E2;
+  --white:#FFFFFF;
+
+  --t-dark:#141412;
+  /* Was #7C7871, which measured 4.00 on bone and failed AA by a hair. */
+  --t-dark-mute:#716E67;
+  --t-light:#F2F0EC;
+  --t-light-mute:#918C85;
+
+  --hair-d:rgba(242,240,236,.13);
+  --hair-l:rgba(20,20,18,.11);
+
+  --gold:#C39A4E;          /* CERTIFIED. Reserved. Never decorative. */
+  --diff-add:#186B48;
+  --diff-rm:#9E3A34;
+
+  /* ---- Brand accent -------------------------------------------------
+     Two accents, two jobs, and they must never be confused:
+
+       --brand  is the PRODUCT. Links, focus rings, active state, the
+                interactive surface. It says "this is Sanhita".
+       --gold   is the SEAL. Certification and nothing else, ever. It says
+                "a named human signed this".
+
+     If gold ever appears on a button or a heading, the one visual signal a
+     supervisor is trained to trust has been spent on decoration.        */
+  --brand:#AC55FF;         /* decoration, glows, large type, dark canvases */
+  --brand-deep:#240642;
+  --brand-ink:#1A0431;
+  --brand-lift:#C489FF;    /* small text on dark. 7.57 on ink, AAA */
+  --brand-wash:rgba(172,85,255,.10);
+  --brand-hair:rgba(172,85,255,.34);
+  --brand-glow:rgba(172,85,255,.45);
+
+  /* Text-strength cuts of the accent. #AC55FF is a decorative value: at 11px
+     on a light surface it measures 3.48 against bone, which fails WCAG AA.
+     These two are the darkest values that keep the hue and clear 4.5.
+       --brand-text   4.62 on bone, 4.60 on white, 4.50 on the wash
+       --brand-solid  4.60 behind white button text
+     Neither may be used on a dark canvas: #7B2FE0 drops to 3.01 on ink, so
+     dark surfaces keep --brand or --brand-lift.                            */
+  --brand-text:#982CFF;
+  --brand-solid:#A03BFF;
+
+  /* Derived accents, used only as washes of the reserved hues. */
+  --gold-wash:rgba(195,154,78,.10);
+  --gold-hair:rgba(195,154,78,.34);
+  /* The certified badge sets gold type on a gold wash, which measured 2.38
+     and was the least readable thing in the product, on the one element a
+     supervisor most needs to read. --gold stays the chrome colour for borders,
+     rules and glows; this darker cut carries the label. 4.56 on the wash. */
+  --gold-text:#84652D;
+  --diff-add-wash:rgba(24,107,72,.10);
+  --diff-rm-wash:rgba(158,58,52,.10);
+
+  /* Rule lifecycle. PROPOSED and REJECTED are deliberately colourless:
+     only certification earns colour in this product. */
+  --status-proposed:var(--t-dark-mute);
+  --status-certified:var(--gold);
+  --status-rejected:var(--diff-rm);
+  --status-superseded:var(--t-dark-mute);
+}
+
+/* Semantic layer — light surface is the default reading mode. */
+:root{
+  --surface:var(--bone);
+  --surface-raised:var(--white);
+  --surface-sunken:var(--bone-2);
+  --text:var(--t-dark);
+  --text-mute:var(--t-dark-mute);
+  --hair:var(--hair-l);
+}
+
+/* Dark surface. Applied by attribute, not by media query, because the
+   certification workspace must not change contrast under the officer
+   mid-review. Theme is an explicit, persisted choice. */
+[data-surface="dark"]{
+  --surface:var(--black);
+  --surface-raised:var(--near);
+  --surface-sunken:var(--black);
+  --text:var(--t-light);
+  --text-mute:var(--t-light-mute);
+  --hair:var(--hair-d);
+  --status-proposed:var(--t-light-mute);
+  --status-superseded:var(--t-light-mute);
+}
+
+/* ------------------------------------------------------------ typography -- */
+
+:root{
+  /* Scale. Ratio ~1.22, tuned so 15px body sits mid-scale. */
+  --fs-display:44px;
+  --fs-title:32px;
+  --fs-head:24px;
+  --fs-subhead:19px;
+  --fs-body:15px;
+  --fs-small:13.5px;
+  --fs-micro:12px;
+  --fs-caps:11px;
+
+  /* Weight discipline. Inter goes heavy fast, so nothing exceeds 600. */
+  --fw-display:500;
+  --fw-head:550;
+  --fw-body:400;
+  --fw-medium:500;
+  --fw-strong:550;
+
+  /* Tracking tightens as size grows, opens up for capitals. */
+  --tr-display:-0.025em;
+  --tr-title:-0.022em;
+  --tr-head:-0.018em;
+  --tr-body:-0.006em;
+  --tr-caps:0.16em;
+
+  --lh-display:1.06;
+  --lh-head:1.18;
+  --lh-body:1.55;
+  --lh-dense:1.4;
+}
+
+body{
+  font-family:var(--font);
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"cv08" 1,"cv10" 1,"cv05" 1,"cv11" 1,"ss03" 1;
+  font-optical-sizing:auto;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-size:var(--fs-body);
+  font-weight:var(--fw-body);
+  line-height:var(--lh-body);
+  letter-spacing:var(--tr-body);
+  color:var(--text);
+  background:var(--surface);
+}
+
+/* Type roles. Compose these, do not restyle headings ad hoc. */
+.t-display{
+  font-family:var(--font-display); font-weight:var(--fw-display);
+  font-size:var(--fs-display); line-height:var(--lh-display);
+  letter-spacing:var(--tr-display);
+}
+.t-title{
+  font-family:var(--font-display); font-weight:var(--fw-display);
+  font-size:var(--fs-title); line-height:var(--lh-head);
+  letter-spacing:var(--tr-title);
+}
+.t-head{
+  font-weight:var(--fw-head); font-size:var(--fs-head);
+  line-height:var(--lh-head); letter-spacing:var(--tr-head);
+}
+.t-subhead{
+  font-weight:var(--fw-medium); font-size:var(--fs-subhead);
+  line-height:var(--lh-head); letter-spacing:var(--tr-head);
+}
+.t-body{ font-size:var(--fs-body); line-height:var(--lh-body); }
+.t-small{ font-size:var(--fs-small); line-height:var(--lh-dense); }
+.t-micro{ font-size:var(--fs-micro); line-height:var(--lh-dense); }
+.t-mute{ color:var(--text-mute); }
+
+/* Every run of capitals in this product uses Inter Display at 500
+   with 0.16em tracking. There are no exceptions. */
+.t-caps{
+  font-family:var(--font-display); font-weight:500;
+  font-size:var(--fs-caps); letter-spacing:var(--tr-caps);
+  text-transform:uppercase; line-height:1.3;
+}
+
+/* Structured data: ids, counts, percentages, enum values. This is Inter with
+   tabular figures, not a monospace face. It sets far better than a fallback
+   mono at 12 to 14px and keeps the app in the same voice as everything else. */
+.t-mono{
+  font-family:var(--font);
+  font-variant-numeric:tabular-nums slashed-zero;
+  font-feature-settings:"cv08" 1,"cv10" 1,"cv05" 1,"cv11" 1,"ss03" 1;
+  letter-spacing:-.004em;
+}
+
+/* True monospace. Only for content where column alignment is the point. */
+.t-code{
+  font-family:var(--font-mono); font-size:var(--fs-micro);
+  letter-spacing:0; font-variant-ligatures:none; word-break:break-all;
+}
+.t-verbatim{
+  font-family:var(--font-mono); font-size:var(--fs-small);
+  line-height:1.62; white-space:pre-wrap; text-align:left;
+  font-variant-ligatures:none;
+}
+
+/* --------------------------------------------------------------- spacing -- */
+
+:root{
+  --s-0:0;
+  --s-1:4px;
+  --s-2:8px;
+  --s-3:12px;
+  --s-4:16px;
+  --s-5:24px;
+  --s-6:32px;
+  --s-7:48px;
+  --s-8:64px;
+  --s-9:96px;
+
+  --measure:68ch;          /* readable line length for clause text */
+  --measure-tight:52ch;
+  --gutter:var(--s-5);
+}
+
+/* ------------------------------------------------------------------ form -- */
+
+:root{
+  /* Radius 5-10px only. No pills, no circles on containers. */
+  --r-sm:5px;
+  --r-md:7px;
+  --r-lg:10px;
+
+  --hair-w:1px;
+  --border:var(--hair-w) solid var(--hair);
+
+  /* Shadows soft and layered, never harsh. */
+  --shadow-1:0 1px 2px rgba(20,20,18,.04),
+             0 2px 6px rgba(20,20,18,.04);
+  --shadow-2:0 1px 2px rgba(20,20,18,.04),
+             0 4px 12px rgba(20,20,18,.05),
+             0 12px 28px rgba(20,20,18,.05);
+  --shadow-3:0 1px 2px rgba(20,20,18,.05),
+             0 8px 20px rgba(20,20,18,.06),
+             0 24px 56px rgba(20,20,18,.07);
+  --shadow-inset:inset 0 1px 0 rgba(255,255,255,.5);
+}
+
+[data-surface="dark"]{
+  --shadow-1:0 1px 2px rgba(0,0,0,.34),
+             0 2px 6px rgba(0,0,0,.28);
+  --shadow-2:0 1px 2px rgba(0,0,0,.34),
+             0 4px 12px rgba(0,0,0,.32),
+             0 12px 28px rgba(0,0,0,.30);
+  --shadow-3:0 1px 2px rgba(0,0,0,.36),
+             0 8px 20px rgba(0,0,0,.34),
+             0 24px 56px rgba(0,0,0,.38);
+  --shadow-inset:inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* ---------------------------------------------------------------- motion -- */
+
+:root{
+  --dur-1:120ms;
+  --dur-2:200ms;
+  --dur-3:320ms;
+  --ease:cubic-bezier(.2,.6,.2,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+}
+
+@media (prefers-reduced-motion:reduce){
+  :root{ --dur-1:0ms; --dur-2:0ms; --dur-3:0ms; }
+}
+
+/* ----------------------------------------------------------------- depth -- */
+
+:root{
+  --z-base:0;
+  --z-sticky:100;
+  --z-overlay:200;
+  --z-modal:300;
+  --z-toast:400;
+}
+
+/* --------------------------------------------------------------- primitives */
+
+.hair{ border:0; border-top:var(--border); margin:0; }
+.hair-v{ border:0; border-left:var(--border); align-self:stretch; }
+
+/* Focus is always visible and never a colour that implies certification.
+   It uses the brand accent, which is the interactive colour. */
+:where(a,button,[tabindex],input,select,textarea):focus-visible{
+  outline:2px solid var(--brand);
+  outline-offset:2px;
+  border-radius:var(--r-sm);
+}
+
+/* The certification mark. The only sanctioned use of --gold. */
+.is-certified{
+  color:var(--gold);
+  border-color:var(--gold-hair);
+}
+.is-certified-seal{
+  color:var(--gold);
+  background:var(--gold-wash);
+  border:var(--hair-w) solid var(--gold-hair);
+  border-radius:var(--r-sm);
+}
+
+/* Diff marks. */
+.diff-add{ color:var(--diff-add); background:var(--diff-add-wash); }
+.diff-rm{ color:var(--diff-rm); background:var(--diff-rm-wash);
+          text-decoration:line-through; text-decoration-thickness:1px; }

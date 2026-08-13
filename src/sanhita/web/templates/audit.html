@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Audit{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="t-caps t-mute">Stage 5 of 5</div>
+  <h1 class="t-title">Audit log</h1>
+  <p class="t-mute">
+    Entries are only ever added, never edited, and each one carries the hash of
+    the entry before it. If somebody changes or removes an entry, every hash
+    after it stops matching.
+  </p>
+</div>
+
+<div class="audit-bar">
+  <div class="audit-status {{ 'is-bad' if chain_problems else 'is-good' }}">
+    <div class="t-caps">Is the chain intact?</div>
+    <div class="audit-status-n">
+      {% if chain_problems %}No{% else %}Yes{% endif %}
+    </div>
+    <div class="t-micro t-mute">
+      {% if chain_problems %}
+        {{ chain_problems|length }} problem(s) across {{ total_entries }} entries
+      {% else %}
+        Verified across all {{ total_entries }} entries
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="audit-meta">
+    <div class="t-caps t-mute">Chain head</div>
+    <div class="t-code">{{ head[:40] or 'empty' }}</div>
+    <div class="t-micro t-mute" style="margin-top:var(--s-3)">
+      {{ human_total }} human decisions, {{ machine_total }} machine proposals
+    </div>
+  </div>
+
+  <div class="audit-action">
+    <button class="btn btn-solid" id="verify-btn"
+            {% if not signing_key_present %}disabled title="SANHITA_SIGNING_KEY is not set"{% endif %}>
+      Check every signature
+    </button>
+    <div id="verify-out" class="t-small" role="status" aria-live="polite"></div>
+    {% if not signing_key_present %}
+      <div class="t-micro warn">SANHITA_SIGNING_KEY is not set, so signatures cannot be checked.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if chain_problems %}
+<div class="blocker">
+  <div class="t-caps">Problems found in the chain</div>
+  <ul>{% for p in chain_problems %}<li class="t-code">{{ p }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if obligation %}
+<div class="rowcount t-small t-mute">
+  Filtered to <span class="t-mono">{{ obligation }}</span>. <a href="{{ base }}/audit">Clear the filter</a>.
+</div>
+{% endif %}
+
+<div class="section-rule"><span class="t-caps t-mute">Decisions made by a person</span></div>
+
+{% if not entries %}
+  <div class="empty">
+    <p class="t-subhead">Nobody has certified, amended or rejected anything yet.</p>
+    <p class="t-mute">
+      Open the <a href="{{ base }}/queue">queue</a> and certify a rule. It will appear here
+      with the name of whoever signed it and the signature they produced.
+    </p>
+  </div>
+{% else %}
+<ul class="cards">
+  {% for e in entries %}
+  <li class="auditcard">
+    <div class="auditcard-l">
+      <span class="status status-{{ e.to_state|lower }}">{{ e.to_state }}</span>
+      <div class="t-micro t-mute">{{ e.at.strftime('%d %b %Y, %H:%M') }} UTC</div>
+    </div>
+    <div class="auditcard-m">
+      <div class="auditcard-top">
+        <a class="t-mono" href="{{ base }}/clause/{{ e.obligation_id.split('-')[1] }}">{{ e.obligation_id }}</a>
+        <span class="t-micro t-mute">version {{ e.version }}</span>
+      </div>
+      <div class="t-small">
+        <strong>{{ e.actor }}</strong> moved it from
+        {{ e.from_state or 'new' }} to {{ e.to_state|lower }}.
+      </div>
+      {% if e.note %}<div class="t-small t-mute auditnote">{{ e.note }}</div>{% endif %}
+      {% if e.changes %}
+        <div class="changes">
+          {% for path, pair in e.changes.items() %}
+            <div class="t-micro diff">
+              <span class="t-mono">{{ path }}</span>
+              <span class="diff-rm">{{ pair[0] }}</span>
+              becomes
+              <span class="diff-add">{{ pair[1] }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% if e.signature %}
+        <div class="t-code sigline">signature {{ e.signature }}</div>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if batches %}
+<div class="section-rule"><span class="t-caps t-mute">Machine proposals, grouped</span></div>
+<p class="t-small t-mute" style="margin-bottom:var(--s-4)">
+  The compiler writes one ledger entry per rule it proposes. Those are folded
+  together here so the human decisions above stay readable. Every individual
+  entry is still in the chain and still hashed.
+</p>
+<table class="grid">
+  <colgroup>
+    <col style="width:20%"><col style="width:22%"><col style="width:20%">
+    <col style="width:16%"><col style="width:22%">
+  </colgroup>
+  <thead><tr>
+    <th>When</th><th>Who</th><th>What</th><th class="num">Rules</th><th class="num">Ledger range</th>
+  </tr></thead>
+  <tbody>
+    {% for b in batches %}
+    <tr>
+      <td class="t-mono">{{ b.date.strftime('%d %b %Y') }}</td>
+      <td class="t-small">{{ b.actor }}</td>
+      <td class="t-small">{{ b.transition|lower }}</td>
+      <td class="num t-mono">{{ b.count }}</td>
+      <td class="num t-mono t-micro t-mute">{{ b.first_seq }} to {{ b.last_seq }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

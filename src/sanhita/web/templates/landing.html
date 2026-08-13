@@ -1,0 +1,474 @@
+﻿<!doctype html>
+<html lang="en" data-surface="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- A browser tab is about twenty characters wide. A sentence here gets cut
+     off mid-word and the reader cannot tell one Sanhita tab from another, so
+     the brand leads and the page name follows. -->
+<title>Sanhita - Homepage</title>
+<meta name="description" content="SEBI publishes regulation as text. Sanhita turns it into typed rules a computer can run, each one signed by a named person and traceable to the exact clause it came from.">
+<meta name="theme-color" content="#1A0431">
+<link rel="preload" href="/ui/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/ui/fonts/InterDisplay-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ui/tokens.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/landing.css?v={{ asset_v }}">
+</head>
+<body class="lp">
+
+<nav class="lp-nav">
+  <a class="lp-brand" href="/">
+    {% include "_logo.html" %}
+    <span class="lp-brand-name">Sanhita</span>
+    <span class="lp-brand-sub">SEBI Compliance</span>
+  </a>
+  <div class="lp-nav-links">
+    <a href="#problem">The problem</a>
+    <a href="#product">The product</a>
+    <a href="#journey">One requirement</a>
+    <a href="#change">Regulatory change</a>
+    <a href="#pipeline">Under the hood</a>
+    <a href="#proof">Proof</a>
+  </div>
+
+  {# Someone arriving here must be able to sign in without first guessing that
+     the workbench exists and that sign-in is buried inside it. #}
+  <div class="lp-nav-auth">
+    {% if user %}
+      <span class="lp-avatar" title="{{ user.name }} ({{ user.email }})"
+            aria-label="Signed in as {{ user.name }}">{{ user.name|trim|first|upper }}</span>
+      <a class="lp-btn lp-btn-brand" href="/w/demo/company">Open the workbench</a>
+    {% else %}
+      <a class="lp-signin" href="/signin">Sign in</a>
+      <a class="lp-btn lp-btn-brand" href="/signup">Create an account</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO â”€â”€ -->
+<!-- ══════════════════════════════════════════════════════════════ HERO ── -->
+<section class="lp-hero grain gridlines">
+  <div class="aurora"><i></i><i></i><i></i></div>
+
+  <div class="inner">
+    <span class="lp-eyebrow reveal">SEBI Securities Market TechSprint 2026, Problem Statement 2</span>
+
+    <h1 class="lp-h1 reveal reveal-d1">From SEBI regulation<br><em>to verified company compliance.</em></h1>
+
+    <p class="lp-sub reveal reveal-d2">
+      SEBI requirements change constantly. Sanhita turns the ones that apply to
+      your firm into certified compliance checks, tests them against your own
+      evidence, shows exactly where the gaps are, tracks the fix, and proves the
+      gap closed.
+    </p>
+
+    <div class="lp-cta-row reveal reveal-d3">
+      <a class="lp-btn lp-btn-brand lp-btn-lg" href="/w/demo/company">Check my company's compliance</a>
+      <a class="lp-btn lp-btn-ghost lp-btn-lg" href="/w/demo/diff">See what changed in SEBI</a>
+    </div>
+
+    {# The whole product in one line, before anything about how it is built. #}
+    <ol class="lp-flow reveal reveal-d4">
+      <li>Company</li>
+      <li>Framework</li>
+      <li>Evidence</li>
+      <li>Assessment</li>
+      <li>Gap</li>
+      <li>Fix</li>
+      <li>Re-check</li>
+    </ol>
+
+    <p class="lp-note reveal reveal-d5">
+      The worked example opens without an account. Bringing your own circular
+      needs one, because a firm's documents and the certifications made against
+      them are confidential.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ PROBLEM ── -->
+<section class="lp-light" id="problem">
+  <div class="inner">
+    <p class="lp-kicker reveal">The problem</p>
+    <h2 class="lp-h2 reveal reveal-d1">Two compliance problems. <strong>One broken bridge.</strong></h2>
+    <p class="lp-lede reveal reveal-d2">
+      The regulation exists as text a person reads. Compliance systems need
+      rules a machine can run. Everything difficult about both problems comes
+      from that one gap.
+    </p>
+
+    <div class="lp-split">
+      <div class="lp-panel reveal reveal-d1">
+        <h3>When the regulation changes</h3>
+        <ol class="lp-chainlist">
+          <li>SEBI publishes or amends a circular</li>
+          <li>Which requirements actually changed?</li>
+          <li>Which of our obligations do they touch?</li>
+          <li>Which processes and controls are affected?</li>
+          <li>What must this firm now do differently?</li>
+        </ol>
+        <p class="lp-panel-note">
+          Today this is manual legal reading, circular by circular. The result is
+          uneven implementation and delayed adaptation across firms in the same
+          position.
+        </p>
+      </div>
+
+      <div class="lp-panel reveal reveal-d2">
+        <h3>Keeping up with what we already owe</h3>
+        <ol class="lp-chainlist">
+          <li>These are the duties this firm has</li>
+          <li>What evidence proves we discharged each one?</li>
+          <li>Did we actually discharge it, and on time?</li>
+          <li>Where is the gap, and who owns fixing it?</li>
+          <li>Did the fix work, and can we prove it?</li>
+        </ol>
+        <p class="lp-panel-note">
+          Operationally intensive, largely manual, and hardest for smaller
+          intermediaries with the least compliance resource.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ LIFECYCLE ── -->
+<section class="lp-dark grain" id="product">
+  <div class="inner">
+    <p class="lp-kicker reveal">The product</p>
+    <h2 class="lp-h2 reveal reveal-d1">Your compliance lifecycle, <strong>in one place</strong></h2>
+    <p class="lp-lede reveal reveal-d2">
+      Nine steps, in the order they happen. Each one produces something the next
+      one needs, and every one of them is written down.
+    </p>
+
+    <ol class="lp-life">
+      <li class="reveal reveal-d1"><b>01</b><h3>Company</h3>
+        <p>Tell Sanhita who you are. Intermediary type, registration, the
+           processes you run and the systems you run them on.</p></li>
+      <li class="reveal reveal-d1"><b>02</b><h3>Framework</h3>
+        <p>Declare which SEBI rulebooks govern you. Sanhita will not decide this
+           for you; it is a legal judgement with consequences.</p></li>
+      <li class="reveal reveal-d2"><b>03</b><h3>Evidence</h3>
+        <p>Upload your own records. Reports, filing registers, dispatch logs,
+           acknowledgements. PDF, CSV, XLSX and JSON are all read.</p></li>
+      <li class="reveal reveal-d2"><b>04</b><h3>Review</h3>
+        <p>Your margin report carries no rule id, so a person confirms which
+           requirement each record satisfies. Nothing reaches the engine first.</p></li>
+      <li class="reveal reveal-d3"><b>05</b><h3>Assessment</h3>
+        <p>Run the certified rules against those records. The run is recorded
+           with the hash of the rulebook and the hash of the evidence it used.</p></li>
+      <li class="reveal reveal-d3"><b>06</b><h3>Gap</h3>
+        <p>Exactly what is missing, late, or has no record at all. Each finding
+           cites its clause, its page and the officer who signed the rule.</p></li>
+      <li class="reveal reveal-d4"><b>07</b><h3>Remediation</h3>
+        <p>An owner, a team, a deadline and a corrective action. There is no
+           button anywhere that marks a gap fixed.</p></li>
+      <li class="reveal reveal-d4"><b>08</b><h3>Re-check</h3>
+        <p>Attach the corrected record to the task and run the same certified
+           rule again. It closes only if the engine agrees.</p></li>
+      <li class="reveal reveal-d5"><b>09</b><h3>Audit</h3>
+        <p>The whole decision chain, hash chained. Altering one entry breaks
+           every hash that follows it.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════ ONE REQUIREMENT ── -->
+<section class="lp-light" id="journey">
+  <div class="inner">
+    <p class="lp-kicker reveal">One requirement, end to end</p>
+    <h2 class="lp-h2 reveal reveal-d1">From one SEBI sentence <strong>to one proven outcome</strong></h2>
+    <p class="lp-lede reveal reveal-d2">
+      A real clause from the Master Circular for Stock Brokers, followed all the
+      way to closure. This is the same path the application walks, and a test
+      drives every step of it through the live routes.
+    </p>
+
+    <ol class="lp-track">
+      <li class="reveal reveal-d1">
+        <span class="lp-track-tag">SEBI clause 40.1.8, page 95</span>
+        <p class="lp-track-quote">As like in derivatives segments, the TMs/CMs
+          shall report to the Stock Exchange on T+5 day the actual short
+          collection or non collection of all margins from clients.</p>
+      </li>
+      <li class="reveal reveal-d1">
+        <span class="lp-track-tag">Compiled into a typed rule</span>
+        <p><b>Stock broker</b> <b>must</b> report short collection of margins,
+          within 5 days of the trade date, evidenced by a report filing.</p>
+        <p class="lp-track-sub">Signing was blocked until an officer settled
+          whether T+5 counts working days or calendar days. The clause does not
+          say, so the compiler refused to decide.</p>
+      </li>
+      <li class="reveal reveal-d2">
+        <span class="lp-track-tag">The firm's own records</span>
+        <p>ABC Securities uploads its margin register. A person confirms which
+          requirement each row satisfies.</p>
+      </li>
+      <li class="reveal reveal-d2">
+        <span class="lp-track-tag">Assessment</span>
+        <p>The certified rule runs against those records. No model is consulted,
+          so the same evidence always produces the same answer.</p>
+      </li>
+      <li class="reveal reveal-d3 is-bad">
+        <span class="lp-track-tag">Gap</span>
+        <p>The January filing was never made. The finding names clause 40.1.8,
+          page 95, and the officer who signed the rule.</p>
+      </li>
+      <li class="reveal reveal-d3">
+        <span class="lp-track-tag">Remediation</span>
+        <p>Owned by Operations, due in seven days, with the corrective action
+          recorded against it.</p>
+      </li>
+      <li class="reveal reveal-d4">
+        <span class="lp-track-tag">Corrected evidence</span>
+        <p>The firm files the return and attaches that record to the task.
+          Re-checking is refused until it does.</p>
+      </li>
+      <li class="reveal reveal-d4 is-good">
+        <span class="lp-track-tag">Closed</span>
+        <p>The same certified rule runs again and returns no finding. Nobody
+          declared this fixed. The engine did, and the whole chain verifies.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════ REGULATORY CHANGE ── -->
+<section class="lp-dark grain" id="change">
+  <div class="inner">
+    <p class="lp-kicker reveal">The other journey</p>
+    <h2 class="lp-h2 reveal reveal-d1">When SEBI changes the rule, <strong>know what changes for you</strong></h2>
+    <p class="lp-lede reveal reveal-d2">
+      Replayed on a genuine amendment, not on an edit we applied by hand. SEBI
+      issued a Master Circular for Investment Advisers in June 2025 and reissued
+      it in February 2026.
+    </p>
+
+    <div class="lp-stats reveal reveal-d3">
+      <div><div class="lp-stat-n">57</div><div class="lp-stat-l">clauses added</div></div>
+      <div><div class="lp-stat-n">39</div><div class="lp-stat-l">clauses removed</div></div>
+      <div><div class="lp-stat-n">5</div><div class="lp-stat-l">clauses modified</div></div>
+      <div><div class="lp-stat-n">376</div><div class="lp-stat-l">renumbered, with the text unchanged</div></div>
+    </div>
+
+    <ol class="lp-flow lp-flow-wide reveal reveal-d4">
+      <li>Changed clause</li>
+      <li>Affected obligation</li>
+      <li>Affected process</li>
+      <li>Affected control</li>
+      <li>What this firm must do</li>
+    </ol>
+
+    <p class="lp-note reveal reveal-d5">
+      The 376 renumberings are the point. Text that did not change but moved
+      would defeat a diff that matched on clause number, and would bury the 5
+      that genuinely changed.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ UNDER THE HOOD ── -->
+<section class="lp-dark" id="pipeline" style="padding-top:0">
+  <div class="inner">
+    <p class="lp-kicker reveal">Under the hood</p>
+    <h2 class="lp-h2 reveal reveal-d1">Regulation becomes <strong>executable logic</strong></h2>
+    <p class="lp-lede reveal reveal-d2">
+      None of the above works unless the rulebook underneath it is trustworthy.
+      This is how a sentence in a PDF becomes something a machine can run and a
+      person is accountable for.
+    </p>
+
+    <div class="lp-pipe">
+      <div class="lp-step reveal reveal-d1">
+        <div class="lp-step-n">01</div><h3>Ingest</h3>
+        <p>The PDF becomes a clause tree with stable ids. Reading the same file
+           twice gives exactly the same result.</p>
+      </div>
+      <div class="lp-step reveal reveal-d2">
+        <div class="lp-step-n">02</div><h3>Propose</h3>
+        <p>Deterministic extraction is the shipped path: all 1,377 rules came
+           from the fixed extractor and no model was called. An LLM assisted
+           escalation path exists for clauses the extractor cannot confidently
+           reach.</p>
+      </div>
+      <div class="lp-step is-key reveal reveal-d3">
+        <div class="lp-step-n">03</div><h3>Certify</h3>
+        <p>A named officer settles anything the clause left open, then signs.
+           The rule locks and cannot be edited after that.</p>
+      </div>
+      <div class="lp-step reveal reveal-d4">
+        <div class="lp-step-n">04</div><h3>Execute</h3>
+        <p>Certified rules run against a firm's evidence and produce findings
+           that cite the clause and the officer. No language model runs at this
+           stage, ever.</p>
+      </div>
+      <div class="lp-step reveal reveal-d5">
+        <div class="lp-step-n">05</div><h3>Diff</h3>
+        <p>When a circular is amended, the certifications that no longer cover
+           the text they were signed over are named, one by one.</p>
+      </div>
+    </div>
+
+    <div class="reveal reveal-d3 lp-thesis">
+      <blockquote class="lp-quote">
+        Probabilistic in the loop. Deterministic at the core. Human certified at
+        the boundary.
+      </blockquote>
+      <p class="lp-cite">
+        A rule is drafted once and approved once. After that it runs the same
+        way for every firm, every time, with no model in the path.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ THESIS ── -->
+<section class="lp-light" id="thesis">
+  <div class="inner">
+    <p class="lp-kicker reveal">The decision everything rests on</p>
+    <h2 class="lp-h2 reveal reveal-d1">Why is this not a chatbot?</h2>
+    <p class="lp-lede reveal reveal-d2">
+      The easy build is search plus a language model over the circulars. We
+      chose not to build that. An answer you cannot sign, version or replay is
+      not compliance, and a regulator will say so.
+    </p>
+
+    <div class="lp-split">
+      <div class="lp-panel is-neg reveal reveal-d1">
+        <h3>Ask a chatbot</h3>
+        <p class="lp-panel-lead">You get an answer.</p>
+        <ul>
+          <li>Different on a different day</li>
+          <li>Nothing you can sign or version</li>
+          <li>Nobody accountable for the reading</li>
+          <li>Cannot replay a decision made last year</li>
+        </ul>
+      </div>
+      <div class="lp-panel is-yes reveal reveal-d2">
+        <h3>Ask Sanhita</h3>
+        <p class="lp-panel-lead">You get a position you can defend.</p>
+        <ul>
+          <li>The requirement, and the clause it came from</li>
+          <li>Your evidence, and where in your document it was found</li>
+          <li>The assessment, with both input hashes</li>
+          <li>The gap, its owner and its deadline</li>
+          <li>The correction, and the re-check that accepted it</li>
+          <li>A hash chained record of all of it</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ PROOF ── -->
+<section class="lp-proof grain" id="proof">
+  <div class="inner">
+    <h2 class="reveal">Measured on the real circular, not on a sample we picked</h2>
+    <div class="lp-stats">
+      <div class="reveal reveal-d1"><div class="lp-stat-n">1,720</div><div class="lp-stat-l">clauses parsed from the Master Circular for Stock Brokers</div></div>
+      <div class="reveal reveal-d2"><div class="lp-stat-n">1,377</div><div class="lp-stat-l">obligations compiled, each pointing back to its clause</div></div>
+      <div class="reveal reveal-d3"><div class="lp-stat-n">183</div><div class="lp-stat-l">certified by a named officer, the only rules that can run</div></div>
+      <div class="reveal reveal-d4"><div class="lp-stat-n">87.5%</div><div class="lp-stat-l">F1 on a 40 clause gold set signed off by somebody who did not write the extractor</div></div>
+      <div class="reveal reveal-d5"><div class="lp-stat-n">990</div><div class="lp-stat-l">tests passing, including the ones that prove repeatability</div></div>
+    </div>
+    <p class="lp-note reveal reveal-d5">
+      Assessment scope is the selected SEBI framework. A firm may declare
+      several, and each is assessed on its own; there is no combined figure.
+      Per field extraction accuracy is not claimed until seven open gold set
+      rulings are settled by a person. <a href="/facts">Every number, live</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ FINAL ── -->
+<section class="lp-final grain">
+  <div class="aurora"><i></i><i></i><i></i></div>
+  <div class="inner">
+    <h2 class="lp-h2 reveal">Find out where your firm actually stands.</h2>
+    <p class="lp-lede reveal reveal-d1">
+      One intermediary category and one master circular, done properly. Upload
+      your evidence and see which SEBI requirements you are meeting.
+    </p>
+    <div class="lp-cta-row reveal reveal-d2">
+      <a class="lp-btn lp-btn-brand lp-btn-lg" href="/w/demo/company">Check my company's compliance</a>
+      <a class="lp-btn lp-btn-ghost lp-btn-lg" href="/w/demo/diff">Explore regulatory changes</a>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• FOOTER â”€â”€ -->
+<footer class="lp-foot">
+  <div class="inner">
+      {# Only things that actually go somewhere are links. The corpus details
+         and the people are facts, so they are set as facts. Seven of the links
+         here used to be anchors back up this same page, which is what made the
+         footer read as a mock-up: clicking your own name scrolled you to the
+         proof section. #}
+      <div class="lp-foot-grid">
+        <div class="lp-foot-brand">
+          <a class="lp-foot-mark" href="/">
+            {% include "_logo.html" %}
+            <span>Sanhita</span>
+          </a>
+          <p>
+            A regulation compiler for India's securities markets. Probabilistic
+            in the loop, deterministic at the core, human certified at the
+            boundary.
+          </p>
+        </div>
+
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="/documents">SEBI rulebooks</a></li>
+            <li><a href="/w/demo">The worked example</a></li>
+            <li><a href="/w/demo/queue">Certification queue</a></li>
+            <li><a href="/w/demo/coverage">Coverage</a></li>
+            <li><a href="/w/demo/gaps">Gap report</a></li>
+            <li><a href="/w/demo/diff">Amendments</a></li>
+            <li><a href="/w/demo/audit">Audit ledger</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4>The document it runs on</h4>
+          <dl class="lp-foot-spec">
+            <dt>Circular</dt>
+            <dd>Master Circular for Stock Brokers</dd>
+            <dt>Issued</dt>
+            <dd>17 June 2025</dd>
+            <dt>Reference</dt>
+            <dd class="lp-foot-ref">SEBI/HO/MIRSD/MIRSD-PoD/P/CIR/2025/90</dd>
+            <dt>Extent</dt>
+            <dd>399 pages, 1,720 clauses</dd>
+          </dl>
+        </div>
+
+        <div>
+          <h4>Project</h4>
+          <ul>
+            <li><a href="/facts">Every figure, read live</a></li>
+            <li>
+              <a href="https://www.github.com/yerramsettysuchita"
+                 rel="noopener noreferrer" target="_blank">Source on GitHub</a>
+            </li>
+          </ul>
+          <h4 class="lp-foot-h2">Built by</h4>
+          <p class="lp-foot-people">
+            Yerramsetty Sai Venkata Suchita<br>
+            Mailey Manjunath
+          </p>
+        </div>
+      </div>
+
+      <div class="lp-foot-base">
+        <span>Sanhita is Sanskrit for a systematically compiled body of law.</span>
+        <span>SEBI Securities Market TechSprint 2026, Problem Statement 2</span>
+      </div>
+    </div>
+  </footer>
+
+<script src="/static/landing.js?v={{ asset_v }}"></script>
+</body>
+</html>

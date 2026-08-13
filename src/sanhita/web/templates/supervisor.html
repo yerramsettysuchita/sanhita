@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Supervisor{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">The view a supervisor has never had</h1>
+  <p class="t-mute">
+    Every other screen here answers how one firm is doing against one rulebook.
+    This one asks how the market is doing against it. That question is only
+    answerable because one compiled corpus is shared: a clause no firm has
+    operationalised, or a clause two firms certified differently, is a signal
+    that does not exist anywhere today.
+  </p>
+</div>
+
+{% if skipped_uncompiled or skipped_unparsed %}
+<div class="caveats">
+  <div class="t-caps t-mute">What this view is leaving out, and why</div>
+  <ul>
+    {% if skipped_uncompiled %}
+    <li class="t-small">
+      <strong>{{ skipped_uncompiled|length }} document(s) have not been
+      compiled</strong> and so have no rules to supervise:
+      {{ skipped_uncompiled|join(', ') }}. Open one and press Compile, then it
+      appears here.
+    </li>
+    {% endif %}
+    {% if skipped_unparsed %}
+    <li class="t-small">
+      <strong>{{ skipped_unparsed|length }} document(s) are not currently held
+      in memory</strong>: {{ skipped_unparsed|join(', ') }}. Reading a long
+      circular takes tens of seconds, and doing that for every document at once
+      would make this page time out rather than load. Open one and it is read
+      once, after which it appears here.
+    </li>
+    {% endif %}
+  </ul>
+</div>
+{% endif %}
+
+{# The firms, before the documents.
+
+   This screen called each workspace a firm, and a workspace is a document: a
+   broker declaring three rulebooks showed up as three firms, and a circular
+   nobody had attached a company to showed up as a firm with no name. Every
+   number was a fact about documents wearing a label that said firms. The
+   document view is still below, under its own honest heading. #}
+<div class="section-rule"><span class="t-caps t-mute">Every firm, and what is known about it</span></div>
+
+{% if not view.rows %}
+  <div class="empty empty-quiet">
+    <p class="t-subhead">No company profile has been recorded here yet.</p>
+    <p class="t-mute">
+      A firm appears on this screen once somebody records who they are and
+      which rulebooks govern them.
+      {% if view.documents_without_a_firm %}
+        {{ view.documents_without_a_firm }} document(s) are open on this
+        installation with no firm attached to any of them.
+      {% endif %}
+    </p>
+  </div>
+{% else %}
+
+<div class="gapbar">
+  <div class="gapstat">
+    <div class="gapstat-n">{{ view.firms }}</div>
+    <div class="t-caps t-mute">Firms</div>
+    <div class="t-micro t-mute">Distinct companies, not documents</div>
+  </div>
+  <div class="gapstat {{ 'gapstat-bad' if view.failing else '' }}">
+    <div class="gapstat-n">{{ view.failing }}</div>
+    <div class="t-caps t-mute">With findings of record</div>
+    <div class="t-micro t-mute">From an assessment somebody took</div>
+  </div>
+  <div class="gapstat {{ 'gapstat-bad' if view.never_assessed else '' }}">
+    <div class="gapstat-n">{{ view.never_assessed }}</div>
+    <div class="t-caps t-mute">Never assessed</div>
+    <div class="t-micro t-mute">Position unknown, which is not the same as clean</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ view.open_tasks }}</div>
+    <div class="t-caps t-mute">Open remediation tasks</div>
+    <div class="t-micro t-mute">Across every firm here</div>
+  </div>
+</div>
+
+<p class="t-small t-mute">{{ view.headline() }}</p>
+
+<table class="grid">
+  <colgroup>
+    <col style="width:24%"><col style="width:24%"><col style="width:12%">
+    <col style="width:14%"><col style="width:12%"><col style="width:14%">
+  </colgroup>
+  <thead><tr>
+    <th>Firm</th>
+    <th>Framework</th>
+    <th class="num">Position</th>
+    <th class="num">Last assessed</th>
+    <th class="num">Open tasks</th>
+    <th class="num">Records</th>
+  </tr></thead>
+  <tbody>
+    {% for r in view.rows %}
+    <tr>
+      <td>
+        {{ r.firm }}
+        {% if r.intermediary %}
+          <div class="t-micro t-mute">{{ r.intermediary|lower|replace('_', ' ') }}</div>
+        {% endif %}
+      </td>
+      <td>
+        <a href="/w/{{ r.framework_id }}/company">{{ r.framework_name }}</a>
+        <div class="t-micro t-mute">{{ r.certified }} signed rule(s)</div>
+      </td>
+      {# No number where no position stands. A percentage from a run whose
+         records have moved is the stale-verdict problem this product spent a
+         whole release removing from the firm's own overview. #}
+      <td class="num t-mono">
+        {% if r.position is not none %}{{ r.position }}%
+        {% else %}<span class="t-mute">none</span>{% endif %}
+      </td>
+      <td class="num t-mono">
+        {% if r.assessed_at %}{{ r.assessed_at.strftime('%d %b %Y') }}
+        {% else %}<span class="t-mute">never</span>{% endif %}
+      </td>
+      <td class="num t-mono">{{ r.open_tasks }}</td>
+      <td class="num t-mono">
+        {{ r.records }}{% if r.days_since_record is not none %}
+          <div class="t-micro t-mute">{{ r.days_since_record }}d ago</div>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td colspan="6" class="t-small t-mute">{{ r.describe() }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p class="t-micro t-mute">
+  These are the firms recorded on this installation. That is not a market and
+  not SEBI's register of intermediaries, and no figure here is extrapolated to
+  either. Every position shown is the one that firm's own recorded assessment
+  produced, carrying its date; a firm whose records have moved since shows no
+  position rather than an old one.
+</p>
+
+{# A supervisory view over one firm demonstrates the plumbing and not the point.
+   The point is what a regulator could see that nobody can see today: the same
+   clause unmet at four firms out of five, or two firms reading one paragraph
+   differently and both filing accordingly.
+
+   Showing that needs several firms. This installation has one, and inventing
+   real ones would be the fabrication this whole product is built against. So
+   these firms are synthetic, unmistakably named, behind an explicit switch,
+   and labelled before anything else on the screen. #}
+{% if not market %}
+<div class="nextstep">
+  <div>
+    <div class="t-caps t-mute">What a supervisor could ask across several firms</div>
+    <p class="nextstep-t">
+      With one firm on this installation there is no market-wide question to
+      ask. Five synthetic firms are available to show the shape of the answer:
+      duties unmet at most of them, and clauses two firms have read differently.
+      None of them exists, none is written anywhere, and none is counted in any
+      figure this product publishes.
+    </p>
+  </div>
+  <a class="btn" href="/supervisor?demo=1">Show the synthetic demonstration</a>
+</div>
+{% else %}
+
+<div class="caveats caveats-warn">
+  <div class="t-caps">{{ market.label }}</div>
+  <p class="t-small">{{ market.caveat() }}</p>
+</div>
+
+<div class="section-rule">
+  <span class="t-caps t-mute">Synthetic supervisory demonstration</span>
+</div>
+
+<p class="t-small t-mute">{{ market.headline() }}</p>
+
+<table class="grid">
+  <thead><tr>
+    <th>Firm (synthetic)</th>
+    <th>Type</th>
+    <th class="num">Position</th>
+    <th class="num">Findings</th>
+    <th class="num">Open tasks</th>
+    <th class="num">Last record</th>
+  </tr></thead>
+  <tbody>
+    {% for f in market.firms %}
+    <tr>
+      <td>{{ f.name }}</td>
+      <td class="t-micro t-mute">{{ f.intermediary|lower|replace('_', ' ') }}</td>
+      <td class="num t-mono">
+        {% if f.position is not none %}{{ f.position }}%
+        {% else %}<span class="t-mute">never assessed</span>{% endif %}
+      </td>
+      <td class="num t-mono">{{ f.breaches }}</td>
+      <td class="num t-mono">{{ f.open_tasks }}</td>
+      <td class="num t-mono">
+        {% if f.days_since_record is not none %}{{ f.days_since_record }}d ago
+        {% else %}<span class="t-mute">none</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="section-rule">
+  <span class="t-caps t-mute">Duties unmet at more than one firm</span>
+</div>
+<p class="t-small t-mute">
+  This is the signal that does not exist today. A regulator can read one firm's
+  filings; nobody can see that most of the firms reading one paragraph filed
+  nothing against it.
+</p>
+<ul class="changelist">
+  {% for gap in market.shared_gaps %}
+  <li class="changeitem">
+    <div class="changeitem-head">
+      <span class="pill">{{ gap.share }}% of firms</span>
+      <span class="t-mono t-micro">clause {{ gap.clause_id }}</span>
+      <span class="t-small">{{ gap.requirement }}</span>
+    </div>
+    <p class="t-small t-mute">{{ gap.describe() }} {{ gap.firms|join(', ') }}.</p>
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="section-rule">
+  <span class="t-caps t-mute">Observed divergence, as against predicted</span>
+</div>
+<p class="t-small t-mute">
+  Two different things, and the product must not merge them. The
+  <strong>divergence analysis</strong> under Advanced
+  reads a clause and predicts that it will be understood two ways. This is the
+  other half: firms that have recorded different readings and filed
+  accordingly, so every one of them believes it complies. Predicted divergence
+  is computed from the real circular. Observed divergence below is synthetic,
+  because this installation holds one firm.
+</p>
+<ul class="changelist">
+  {% for d in market.divergences %}
+  <li class="changeitem changeitem-recertify">
+    <div class="changeitem-head">
+      <span class="pill">{{ d.camps }} readings</span>
+      <span class="t-mono t-micro">clause {{ d.clause_id }}</span>
+      <span class="t-small">{{ d.requirement }}</span>
+    </div>
+    <p class="t-small t-mute">{{ d.describe() }}</p>
+    <ul class="remtask-evlist">
+      {% for firm, reading in d.readings %}
+      <li><span class="t-small">{{ firm }}</span>
+        <span class="t-small t-mute">{{ reading }}</span></li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
+
+<p class="t-micro t-mute">
+  <a href="/supervisor">Hide the synthetic demonstration</a>
+</p>
+{% endif %}
+
+<div class="section-rule"><span class="t-caps t-mute">And the documents behind them</span></div>
+
+{% if not multi_copy %}
+<div class="caveats caveats-warn">
+  <div class="t-caps">This machine holds one working copy of each document</div>
+  <p class="t-small">
+    A market-wide view needs several firms working the same circular. Here
+    there is one, so the figures below describe a single compilation rather
+    than a market, and no cross-firm comparison is drawn. Nothing on this
+    screen is invented to fill the gap.
+  </p>
+</div>
+{% endif %}
+
+<div class="gapbar">
+  <div class="gapstat">
+    <div class="gapstat-n">{{ compilations|length }}</div>
+    <div class="t-caps t-mute">Documents in view</div>
+    <div class="t-micro t-mute">Everything this account may open</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ cohorts|length }}</div>
+    <div class="t-caps t-mute">Distinct rulebooks</div>
+    <div class="t-micro t-mute">Grouped by parse fingerprint, not by filename</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ compilations|sum(attribute='certified') }}</div>
+    <div class="t-caps t-mute">Signed rules across all of them</div>
+    <div class="t-micro t-mute">Each one carries a named human</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ compilations|sum(attribute='rules') }}</div>
+    <div class="t-caps t-mute">Compiled rules</div>
+    <div class="t-micro t-mute">Signed and unsigned</div>
+  </div>
+</div>
+
+<div class="section-rule"><span class="t-caps t-mute">Every document, and how far it has been taken</span></div>
+
+<table class="grid">
+  <colgroup>
+    <col style="width:30%"><col style="width:15%"><col style="width:13%">
+    <col style="width:13%"><col style="width:14%"><col style="width:15%">
+  </colgroup>
+  <thead><tr>
+    <th>Document</th>
+    <th class="num">Duty clauses</th>
+    <th class="num">Compiled</th>
+    <th class="num">Certified</th>
+    <th class="num">Signed rules</th>
+    <th></th>
+  </tr></thead>
+  <tbody>
+    {% for f in compilations %}
+    <tr>
+      <td>
+        {{ f.workspace.name }}
+        {% if f.workspace.builtin %}
+          <span class="t-micro t-mute">worked example</span>
+        {% endif %}
+      </td>
+      <td class="num t-mono">{{ f.duty_clauses }}</td>
+      <td class="num t-mono">{{ f.compiled_coverage|pct }}</td>
+      <td class="num t-mono">{{ f.certified_coverage|pct }}</td>
+      <td class="num t-mono">{{ f.certified }}</td>
+      <td><a class="t-micro" href="/w/{{ f.workspace.id }}/coverage">Open coverage</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% for cohort in cohorts if cohort.compilations|length > 1 %}
+<div class="section-rule">
+  <span class="t-caps t-mute">
+    {{ cohort.compilations|length }} working copies of the same rulebook
+  </span>
+</div>
+
+<div class="gapbar">
+  <div class="gapstat">
+    <div class="gapstat-n">{{ cohort.covered_by_any|length }}</div>
+    <div class="t-caps t-mute">Clauses covered by at least one firm</div>
+    <div class="t-micro t-mute">Somebody has signed a rule for these</div>
+  </div>
+  <div class="gapstat gapstat-bad">
+    <div class="gapstat-n">{{ cohort.covered_by_any|length - cohort.covered_by_all|length }}</div>
+    <div class="t-caps t-mute">Covered by some but not all</div>
+    <div class="t-micro t-mute">
+      Uneven implementation, which is the harm the problem statement names
+    </div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ cohort.covered_by_all|length }}</div>
+    <div class="t-caps t-mute">Covered by every firm</div>
+    <div class="t-micro t-mute">The part of the rulebook the market agrees on</div>
+  </div>
+</div>
+{% endfor %}
+
+<div class="caveats">
+  <div class="t-caps t-mute">How to read this</div>
+  <ul>
+    <li class="t-small">
+      Documents are grouped by parse fingerprint rather than by name, so two
+      firms are only compared when they are demonstrably working from the same
+      bytes of the same circular.
+    </li>
+    <li class="t-small">
+      Coverage figures are the same ones each document's own coverage screen
+      shows, computed by the same code, over a denominator that is calculated
+      independently of the extractor.
+    </li>
+    <li class="t-small">
+      This screen reads. It never writes, and it cannot certify, reject or
+      amend anything in any document it can see.
+    </li>
+    <li class="t-small">
+      Nothing here is aggregated across firms that have not been opened on this
+      machine. It is a view of what is present, not an estimate of a market.
+    </li>
+  </ul>
+</div>
+{% endblock %}

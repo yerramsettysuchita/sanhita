@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Impact Assessment{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">What would this amendment cost?</h1>
+  <p class="t-mute">
+    Governments call this a regulatory impact assessment. It is normally done by
+    hand, slowly, on the largest changes only, and often not at all, because
+    answering it means holding a whole rulebook in your head. Over a compiled
+    corpus it is a comparison: apply the draft to a copy, run the same analyses
+    that produce every other screen here, and report the difference.
+  </p>
+</div>
+
+{% if not certified %}
+  <div class="empty">
+    <p class="t-subhead">Nothing here has been certified yet.</p>
+    <p class="t-mute">
+      Only a signed rule can be meaningfully amended. An unsigned proposal is not
+      yet part of the rulebook to change.
+    </p>
+    <a class="btn btn-solid" href="{{ base }}/queue">Open the queue</a>
+  </div>
+{% else %}
+
+<form class="draftform" method="get" action="{{ base }}/simulate">
+  <div class="draftform-row">
+    <label class="draftfield">
+      <span class="t-caps t-mute">Rule to amend</span>
+      <select class="field" name="rule">
+        <option value="">Choose a certified rule</option>
+        {% for o in certified %}
+        <option value="{{ o.id }}" {{ 'selected' if o.id == rule }}>
+          {{ o.source.clause_id }} &middot; {{ o.action.verb }} {{ o.action.object[:52] }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <div class="draftform-row">
+    <label class="draftfield">
+      <span class="t-caps t-mute">Change</span>
+      <select class="field" name="mode">
+        <option value="days" {{ 'selected' if mode != 'period' }}>Set a deadline in days</option>
+        <option value="period" {{ 'selected' if mode == 'period' }}>Make it recur on a period</option>
+      </select>
+    </label>
+
+    <label class="draftfield draftfield-sm">
+      <span class="t-caps t-mute">Days</span>
+      <input class="field" type="number" name="days" min="0" max="3650"
+             value="{{ days if days is not none else '' }}" placeholder="1">
+    </label>
+
+    <label class="draftfield draftfield-sm">
+      <span class="t-caps t-mute">Counted as</span>
+      <select class="field" name="count">
+        <option value="BUSINESS" {{ 'selected' if count != 'CALENDAR' }}>Business days</option>
+        <option value="CALENDAR" {{ 'selected' if count == 'CALENDAR' }}>Calendar days</option>
+      </select>
+    </label>
+
+    <label class="draftfield draftfield-sm">
+      <span class="t-caps t-mute">Or every</span>
+      <select class="field" name="period">
+        <option value="">-</option>
+        {% for p in ['DAY','WEEK','MONTH','QUARTER','HALF_YEAR','YEAR'] %}
+        <option value="{{ p }}" {{ 'selected' if period == p }}>{{ p.replace('_',' ')|lower }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button class="btn btn-solid">Assess</button>
+  </div>
+  <p class="t-micro t-mute draftform-note">
+    Nothing here is written. The draft exists only for the length of this
+    calculation, no signature is touched, and the rulebook is unchanged.
+  </p>
+</form>
+
+{% if error %}
+  <div class="caveats caveats-bad" role="alert">
+    <div class="t-caps">That draft could not be assessed</div>
+    <p class="t-small">{{ error }}</p>
+  </div>
+{% endif %}
+
+{% if assessment %}
+
+<div class="section-rule">
+  <span class="t-caps t-mute">
+    Impact of {% for c in assessment.changes %}{{ c.describe() }}{% endfor %}
+    on clause {{ target.source.clause_id }}
+  </span>
+</div>
+
+<div class="gapbar">
+  <div class="gapstat {{ 'gapstat-bad' if assessment.new_conflicts else '' }}">
+    <div class="gapstat-n">{{ assessment.new_conflicts|length }}</div>
+    <div class="t-caps t-mute">New contradictions</div>
+    <div class="t-micro t-mute">Things the rulebook would then say twice, differently</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ assessment.resolved_conflicts|length }}</div>
+    <div class="t-caps t-mute">Contradictions resolved</div>
+    <div class="t-micro t-mute">Disagreements this draft would settle</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">
+      {% if assessment.total_occasions_delta > 0 %}+{% endif %}{{ '{:,}'.format(assessment.total_occasions_delta) }}
+    </div>
+    <div class="t-caps t-mute">Occasions a year</div>
+    <div class="t-micro t-mute">Compliance events added or removed across the market</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ assessment.needs_reread|length }}</div>
+    <div class="t-caps t-mute">Rules to re-read</div>
+    <div class="t-micro t-mute">They cite a clause this draft touches</div>
+  </div>
+</div>
+
+{% if assessment.directly_changed %}
+<div class="section-rule"><span class="t-caps t-mute">What changes directly</span></div>
+<table class="grid">
+  <colgroup><col style="width:14%"><col style="width:14%"><col style="width:20%"><col style="width:20%"><col style="width:32%"></colgroup>
+  <thead><tr>
+    <th>Clause</th><th>Actor</th><th>Was</th><th>Becomes</th><th>Duty</th>
+  </tr></thead>
+  <tbody>
+    {% for row in assessment.directly_changed %}
+    <tr>
+      <td><a class="t-mono" href="{{ base }}/clause/{{ row.clause_id }}">{{ row.clause_id }}</a></td>
+      <td class="t-small">{{ row.actor.replace('_',' ')|lower }}</td>
+      <td class="t-small">{{ row.was }}</td>
+      <td class="t-small"><strong>{{ row.becomes }}</strong></td>
+      <td class="t-small">{{ row.action[:70] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if assessment.occasions_delta %}
+<div class="section-rule"><span class="t-caps t-mute">What it costs, per actor, per year</span></div>
+<table class="grid">
+  <colgroup><col style="width:34%"><col style="width:22%"><col style="width:22%"><col style="width:22%"></colgroup>
+  <thead><tr>
+    <th>Actor</th>
+    <th class="num">Occasions now</th>
+    <th class="num">After the change</th>
+    <th class="num">Difference</th>
+  </tr></thead>
+  <tbody>
+    {% for actor, delta in assessment.occasions_delta.items() %}
+    <tr>
+      <td>{{ actor.replace('_',' ')|lower }}</td>
+      <td class="num t-mono">{{ '{:,}'.format(assessment.occasions_before.get(actor, 0)) }}</td>
+      <td class="num t-mono">{{ '{:,}'.format(assessment.occasions_after.get(actor, 0)) }}</td>
+      <td class="num t-mono">{% if delta > 0 %}+{% endif %}{{ '{:,}'.format(delta) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if assessment.new_conflicts %}
+<div class="section-rule">
+  <span class="t-caps t-mute">Contradictions this draft would introduce</span>
+</div>
+<ul class="cards">
+  {% for c in assessment.new_conflicts %}
+  <li class="conflict conflict-{{ c.kind|lower }}">
+    <p class="conflict-q">{{ c.question }}</p>
+    <div class="conflict-pair">
+      {% for side in (c.left, c.right) %}
+      <div class="conflict-side">
+        <div class="conflict-side-top">
+          <a class="gapcard-clause t-mono" href="{{ base }}/clause/{{ side.clause_id }}">{{ side.clause_id }}</a>
+          <span class="t-micro t-mute">page {{ side.page }}</span>
+          <span class="status status-{{ side.status|lower }}">{{ side.status }}</span>
+        </div>
+        <div class="conflict-rule t-small">{{ side.action }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if assessment.needs_reread %}
+<div class="section-rule"><span class="t-caps t-mute">Rules that cite a clause this draft touches</span></div>
+<table class="grid">
+  <thead><tr><th>Clause</th><th>Cites</th><th>Actor</th></tr></thead>
+  <tbody>
+    {% for row in assessment.needs_reread %}
+    <tr>
+      <td><a class="t-mono" href="{{ base }}/clause/{{ row.clause_id }}">{{ row.clause_id }}</a></td>
+      <td class="t-mono t-small">{{ row.cites }}</td>
+      <td class="t-small">{{ row.actor.replace('_',' ')|lower }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<div class="caveats">
+  <div class="t-caps t-mute">How this was calculated</div>
+  <ul>
+    {% for note in assessment.caveats() %}<li class="t-small">{{ note }}</li>{% endfor %}
+  </ul>
+</div>
+
+{% elif not error %}
+<div class="empty">
+  <p class="t-subhead">Choose a rule and a change.</p>
+  <p class="t-mute">
+    Tightening a deadline is the case worth trying first. On this rulebook it
+    tends to contradict a sibling clause that still names the old one.
+  </p>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

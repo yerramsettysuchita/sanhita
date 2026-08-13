@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Divergence{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">Where a clause is likely to be read two ways</h1>
+  <p class="t-mute">
+    The problem statement names the harm as divergent interpretations across
+    similarly situated intermediaries. A shared certified rulebook removes the
+    cause. This screen asks the question one step earlier, while a drafter can
+    still do something about it: which clauses are going to cause the
+    disagreement?
+  </p>
+  {# Two different claims, and the product must not merge them. This is
+     predicted from the clause's own text: how it is written, what it leaves
+     unsaid, how many readings its words admit. It is not a record of firms
+     that have actually read it differently, because this installation holds
+     one firm. Observed divergence, synthetic and labelled, is on the
+     supervisor screen. #}
+  <p class="t-small t-mute">
+    <strong>Predicted, not observed.</strong> Every signal below is computed
+    from the clause's own words. Nothing here says that two firms have in fact
+    read a clause differently: that would need several firms compiled against
+    this rulebook, and this installation has one. A labelled synthetic
+    demonstration of observed divergence is under
+    <a href="/supervisor?demo=1">Supervisor</a>.
+  </p>
+</div>
+
+{% if not report.risks %}
+  <div class="empty">
+    <p class="t-subhead">No clause in this document carries a divergence signal.</p>
+    <p class="t-mute">{{ report.rules_examined }} rules were examined.</p>
+  </div>
+{% else %}
+
+<div class="gapbar">
+  <div class="gapstat gapstat-bad">
+    <div class="gapstat-n">{{ report.high|length }}</div>
+    <div class="t-caps t-mute">Worth redrafting</div>
+    <div class="t-micro t-mute">Two or more independent reasons to be misread</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.moderate|length }}</div>
+    <div class="t-caps t-mute">Worth a second read</div>
+    <div class="t-micro t-mute">One strong signal, or several weak ones</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.clauses_examined }}</div>
+    <div class="t-caps t-mute">Clauses examined</div>
+    <div class="t-micro t-mute">From {{ report.rules_examined }} compiled rules</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.contested_count }}</div>
+    <div class="t-caps t-mute">Already contested</div>
+    <div class="t-micro t-mute">A reviewer overruled the extractor here</div>
+  </div>
+</div>
+
+<div class="caveats">
+  <div class="t-caps t-mute">How to read this</div>
+  <ul>
+    {% for note in report.caveats() %}<li class="t-small">{{ note }}</li>{% endfor %}
+  </ul>
+</div>
+
+<div class="section-rule"><span class="t-caps t-mute">Most likely to be read two ways</span></div>
+
+<ul class="cards">
+  {% for risk in shown %}
+  <li class="divrisk {{ 'divrisk-high' if risk.score >= 4 else '' }}">
+    <div class="divrisk-head">
+      <a class="rulecard-clause t-mono" href="{{ base }}/clause/{{ risk.clause_id }}">{{ risk.clause_id }}</a>
+      <span class="t-micro t-mute">page {{ risk.page }}</span>
+      {% if risk.certified %}
+        <span class="status status-certified">{{ risk.certified }} signed</span>
+      {% endif %}
+      {% if risk.proposed %}
+        <span class="status status-proposed">{{ risk.proposed }} proposed</span>
+      {% endif %}
+      <span class="divrisk-score t-mono" title="Sum of the signal weights below">{{ risk.score }}</span>
+    </div>
+
+    <ul class="divsignals">
+      {% for s in risk.signals %}
+      <li class="divsignal divsignal-{{ s.kind }}">
+        <span class="t-caps divsignal-kind">{{ s.kind }}</span>
+        <span class="t-small">{{ s.detail }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <blockquote class="cite-verbatim">{{ risk.verbatim[:340] }}{% if risk.verbatim|length > 340 %}...{% endif %}</blockquote>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if report.risks|length > shown|length %}
+<p class="t-micro t-mute" style="margin-top:var(--s-3)">
+  Showing the {{ shown|length }} highest ranked of {{ report.risks|length }} clauses
+  carrying at least one signal.
+</p>
+{% endif %}
+{% endif %}
+{% endblock %}

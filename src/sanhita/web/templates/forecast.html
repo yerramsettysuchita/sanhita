@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Forecast{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">What is about to be missed</h1>
+  <p class="t-mute">
+    The gaps screen answers what already went wrong, which is what an inspection
+    produces and is always slightly too late. This one reads the same evidence
+    forwards: given what falls due next, and given how this firm handled the same
+    duty every previous time, which of these are heading for a finding?
+  </p>
+</div>
+
+{% if not certified_count %}
+  <div class="empty">
+    <p class="t-subhead">Nothing has been certified in this document.</p>
+    <p class="t-mute">A duty is only owed once a person has signed the rule.</p>
+    <a class="btn btn-solid" href="{{ base }}/queue">Open the queue</a>
+  </div>
+{% else %}
+
+<form class="filters" method="get" action="{{ base }}/forecast">
+  <label class="t-caps">Look ahead
+    <select class="field" name="horizon" onchange="this.form.submit()">
+      {% for h in [7, 30, 60, 90, 180] %}
+      <option value="{{ h }}" {{ 'selected' if horizon == h }}>{{ h }} days</option>
+      {% endfor %}
+    </select>
+  </label>
+  <span class="t-small t-mute">
+    {{ report.start.strftime('%d %b %Y') }} to {{ report.end.strftime('%d %b %Y') }}
+  </span>
+</form>
+
+<div class="gapbar">
+  <div class="gapstat {{ 'gapstat-bad' if report.never_evidenced else '' }}">
+    <div class="gapstat-n">{{ report.never_evidenced|length }}</div>
+    <div class="t-caps t-mute">Never once evidenced</div>
+    <div class="t-micro t-mute">Came round before, nothing was ever filed</div>
+  </div>
+  <div class="gapstat {{ 'gapstat-bad' if report.often_missed else '' }}">
+    <div class="gapstat-n">{{ report.often_missed|length }}</div>
+    <div class="t-caps t-mute">Missed more often than not</div>
+    <div class="t-micro t-mute">Filed sometimes, less than half the time</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.unproven|length }}</div>
+    <div class="t-caps t-mute">No history at all</div>
+    <div class="t-micro t-mute">An empty record is not a good record</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.on_record|length }}</div>
+    <div class="t-caps t-mute">Filed every time</div>
+    <div class="t-micro t-mute">Or every time but one</div>
+  </div>
+</div>
+
+{% if not imported %}
+<div class="caveats caveats-warn">
+  <div class="t-caps">These events are generated, not a firm's own records</div>
+  <p class="t-small">
+    No evidence file has been imported for this document, so the track record
+    below is built from a generated compliance history seeded from the document
+    id. It is deterministic and it is not real.
+    <a href="{{ base }}/gaps">Import a filing export</a> to replace it.
+  </p>
+</div>
+{% endif %}
+
+<div class="section-rule"><span class="t-caps t-mute">Worst first</span></div>
+
+{% if not report.duties %}
+  <p class="t-mute">Nothing recurring falls due inside this window.</p>
+{% else %}
+<table class="grid">
+  <colgroup>
+    <col style="width:13%"><col style="width:14%"><col style="width:16%">
+    <col style="width:13%"><col style="width:44%">
+  </colgroup>
+  <thead><tr>
+    <th>Clause</th>
+    <th>Next due</th>
+    <th>Outlook</th>
+    <th class="num">Filed before</th>
+    <th>Duty</th>
+  </tr></thead>
+  <tbody>
+    {% for d in report.duties %}
+    <tr>
+      <td><a class="t-mono" href="{{ base }}/clause/{{ d.clause_id }}">{{ d.clause_id }}</a></td>
+      <td class="t-small">
+        {% if d.daily %}every day
+        {% elif d.due_on %}{{ d.due_on.strftime('%d %b') }}
+          {% if d.days_away is not none %}
+            <span class="t-micro t-mute">in {{ d.days_away }}d</span>
+          {% endif %}
+        {% else %}-{% endif %}
+      </td>
+      <td>
+        <span class="status {{ 'status-rejected' if d.outlook.at_risk else 'status-proposed' }}">
+          {% if d.outlook.value == 'NEVER_EVIDENCED' %}never evidenced
+          {% elif d.outlook.value == 'OFTEN_MISSED' %}often missed
+          {% elif d.outlook.value == 'UNPROVEN' %}no history
+          {% else %}on record{% endif %}
+        </span>
+      </td>
+      <td class="num t-mono">
+        {% if d.occasions_before %}{{ d.filed_before }}/{{ d.occasions_before }}{% else %}-{% endif %}
+      </td>
+      <td class="t-small">{{ d.requirement[:80] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<div class="caveats">
+  <div class="t-caps t-mute">How to read this</div>
+  <ul>
+    {% for note in report.caveats() %}<li class="t-small">{{ note }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

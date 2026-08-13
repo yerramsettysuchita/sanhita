@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Regulatory Changes{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  {# Not a stage of the firm's loop. The problem statement names two
+     distinct challenges, and this is the other one: what a new edition
+     changed and what it means operationally. Nobody closes a gap and then
+     diffs two circulars as the next step. #}
+  <div class="t-caps t-mute">Regulatory change, the other journey</div>
+  <h1 class="t-title">What an amendment costs you</h1>
+  <p class="t-mute">
+    A certification signs over the clause's own characters. When those
+    characters move, the signature stops covering them and the rule goes back to
+    a person. Similarity is never consulted, so one character is enough.
+  </p>
+</div>
+
+{# Pressed, not polled. There is no scheduler behind this button and the
+   product never implies there is: the answer is as fresh as the click. #}
+<div class="nextstep">
+  <div>
+    <div class="t-caps t-mute">Has SEBI published anything?</div>
+    <p class="nextstep-t">
+      Read sebi.gov.in's own list of circulars and say which of them are not on
+      this installation. Nothing found here is downloaded, parsed or certified
+      by being found; it is a title, a date and a link for a person to act on.
+    </p>
+  </div>
+  <form method="post" action="{{ base }}/discover">
+    <button class="btn btn-solid" type="submit">Check SEBI now</button>
+  </form>
+</div>
+
+{% if discovery %}
+  {% if not discovery.ok %}
+  <div class="caveats caveats-warn">
+    <div class="t-caps">SEBI's listing could not be read</div>
+    <p class="t-small">
+      {{ discovery.problem }}
+      This is reported rather than shown as an empty result, because an empty
+      result reads as "SEBI has published nothing", which is the one wrong
+      answer available here.
+    </p>
+  </div>
+  {% else %}
+  <div class="caveats">
+    <div class="t-caps t-mute">
+      Checked {{ discovery.checked_at.strftime('%d %b %Y, %H:%M') }} UTC against
+      <span class="t-code">sebi.gov.in</span>
+    </div>
+    <p class="t-small">{{ discovery.headline() }}</p>
+    {% if discovery.publications %}
+    <ul class="changelist">
+      {% for p in discovery.publications[:12] %}
+      <li class="changeitem changeitem-{{ p.state.value|lower }}">
+        <div class="changeitem-head">
+          <span class="pill">{{ p.state.label }}</span>
+          <a class="t-small" href="{{ p.url }}" rel="noopener noreferrer" target="_blank">{{ p.title }}</a>
+          {% if p.issued_on %}
+            <span class="t-micro t-mute">{{ p.issued_on.strftime('%d %b %Y') }}</span>
+          {% endif %}
+        </div>
+        <p class="t-small t-mute">{{ p.describe() }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="t-micro t-mute">
+      Bringing one in is a separate decision: download it from SEBI, upload it
+      under <a href="/documents">SEBI rulebooks</a>, and it is parsed and
+      compared like any other edition. Discovery never certifies anything.
+    </p>
+    {% endif %}
+  </div>
+  {% endif %}
+{% endif %}
+
+<form class="filters" method="get" action="{{ base }}/diff">
+  <label class="t-caps">Compare against the earlier version
+    <select class="field" name="against" onchange="this.form.submit()">
+      <option value="">choose a document</option>
+      {% for d in others %}
+      <option value="{{ d.id }}" {{ 'selected' if against == d.id }}>{{ d.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <span class="t-small t-mute">
+    <strong>{{ workspace.name }}</strong> is treated as the later version.
+  </span>
+</form>
+
+{% if not others %}
+  <div class="empty">
+    <p class="t-subhead">There is nothing to compare this against yet.</p>
+    <p class="t-mute">
+      Upload the amended circular as a second document, then come back and pick
+      it here. <a href="/documents">Bring a document</a>.
+    </p>
+  </div>
+
+{% elif not changes %}
+  <div class="empty">
+    <p class="t-subhead">Pick the earlier version above.</p>
+    <p class="t-mute">
+      Sanhita will read both documents, compare them clause by clause, and tell
+      you which of your certifications no longer cover the text they were signed
+      over.
+    </p>
+  </div>
+
+{% elif changes.identical %}
+  <div class="verdict verdict-readable">
+    <div class="verdict-l">
+      <div class="t-caps">Did anything change?</div>
+      <div class="verdict-n">No</div>
+      <p class="t-small">
+        These two documents parse to the same tree, clause for clause and hash
+        for hash. Every certification still covers the text it was signed over.
+      </p>
+    </div>
+  </div>
+
+{% else %}
+<div class="verdict {{ 'verdict-unreadable' if impact.signatures_lost else 'verdict-partial' }}">
+  <div class="verdict-l">
+    <div class="t-caps">What does this cost you?</div>
+    <div class="verdict-n">{{ impact.signatures_lost }}</div>
+    <p class="t-small">{{ impact.headline() }}</p>
+  </div>
+  <div class="verdict-figures">
+    <div class="vfig">
+      <div class="vfig-n">{{ changes.summary().modified }}</div>
+      <div class="t-caps t-mute">Clauses amended</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ changes.summary().added }}</div>
+      <div class="t-caps t-mute">Added</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ changes.summary().removed }}</div>
+      <div class="t-caps t-mute">Removed</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ changes.summary().renumbered }}</div>
+      <div class="t-caps t-mute">Renumbered</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ changes.unchanged }}</div>
+      <div class="t-caps t-mute">Untouched</div>
+    </div>
+  </div>
+</div>
+
+<div class="caveats">
+  <div class="t-caps t-mute">What was compared</div>
+  <ul>
+    <li class="t-small">
+      Earlier: <strong>{{ changes.before_label }}</strong>,
+      fingerprint <span class="t-code">{{ changes.before_fingerprint[:24] }}</span>
+    </li>
+    <li class="t-small">
+      Later: <strong>{{ changes.after_label }}</strong>,
+      fingerprint <span class="t-code">{{ changes.after_fingerprint[:24] }}</span>
+    </li>
+    <li class="t-small">
+      {{ impact.certified_before }} certifications before,
+      {{ impact.certified_after }} still standing after.
+    </li>
+    {% if graph %}
+    <li class="t-small">
+      {{ graph.edges }} cross-references were followed, so a clause that
+      incorporates an amended clause by reference is reported even though its
+      own words never changed.
+    </li>
+    {% endif %}
+  </ul>
+</div>
+
+{% if impact.affected %}
+<div class="section-rule"><span class="t-caps t-mute">Rules that have to go back to a person</span></div>
+
+<ul class="cards">
+  {% for a in impact.affected %}
+  <li class="gapcard {{ 'gapcard-missing' if a.loses_a_signature else 'gapcard-late' }}">
+    <div class="gapcard-l">
+      <span class="status {{ 'status-rejected' if a.loses_a_signature else 'status-proposed' }}">
+        {{ a.consequence.value }}
+      </span>
+      <div class="t-micro t-mute">{{ a.change.value|lower }}</div>
+    </div>
+    <div class="gapcard-m">
+      <div class="gapcard-top">
+        <a class="gapcard-clause t-mono" href="{{ base }}/clause/{{ a.clause_id }}">{{ a.clause_id }}</a>
+        <span class="t-micro t-mute">{{ a.obligation_id }}</span>
+        {% if a.now_at %}
+          <span class="t-micro t-mute">now numbered {{ a.now_at }}</span>
+        {% endif %}
+      </div>
+      <p class="gapcard-req">
+        {% if a.consequence.value == 'REREAD' %}
+          This clause did not change. It points at clause
+          <strong>{{ a.via }}</strong>, which did{% if a.hops and a.hops > 1 %}
+          ({{ a.hops }} references away){% endif %}. Its own signature still
+          covers its own words, so nothing is invalidated, but what it requires
+          has moved and a person should read it again.
+        {% elif a.consequence.value == 'RECERTIFY' %}
+          The words this rule was signed over have changed. The signature no
+          longer covers them, so it must be read and signed again.
+        {% elif a.consequence.value == 'WITHDRAW' %}
+          The clause this rule came from is gone from the later document. The
+          rule should be withdrawn.
+        {% elif a.consequence.value == 'REPOINT' %}
+          The same words, under a new clause number. The rule's anchor has to be
+          moved before it points at anything.
+        {% else %}
+          Proposed but never signed, so no human decision is lost. Recompiling
+          picks up the new text.
+        {% endif %}
+      </p>
+      {% if a.certified_by %}
+        <div class="cite-meta t-micro t-mute">
+          <span>Was signed by <strong>{{ a.certified_by }}</strong></span>
+        </div>
+        <div class="t-code cite-sig">signature {{ a.signature }}</div>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+  <div class="empty">
+    <p class="t-subhead">No compiled rule points at a clause that changed.</p>
+    <p class="t-mute">The amendment touched parts of the document you have not compiled.</p>
+  </div>
+{% endif %}
+
+{% if impact.new_clauses %}
+<div class="section-rule"><span class="t-caps t-mute">New clauses with no rule yet</span></div>
+<p class="t-small t-mute">
+  {{ impact.new_clauses|length }} clause(s) appeared in the later document and
+  nothing has been compiled from them.
+</p>
+<div class="excluded" style="justify-content:flex-start">
+  {% for cid in impact.new_clauses[:40] %}
+    <span class="chip"><span class="chip-n">new</span>{{ cid }}</span>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+{# The counts above are a fact about SEBI. This is the question a compliance
+   officer actually has, and it is answerable only because the control bindings
+   connect a clause to a desk. It is asked whenever two editions were compared,
+   including when they turned out identical, because "nothing changed for you"
+   is an answer somebody needs to be told rather than left to infer. #}
+{% if changes %}
+<div class="section-rule">
+  <span class="t-caps t-mute">
+    What this means for {{ company.name if company else 'this firm' }}
+  </span>
+</div>
+
+{# The whole amendment as one decision.
+
+   The list below could already raise one task at a time, which is fine for
+   three actions and useless for eighty-two. What a compliance officer needs is
+   one artifact saying "here is everything this does to us, approve it or do
+   not", carrying who approved it and the fingerprints it was computed from.
+
+   This is the agentic boundary. Everything above it is arithmetic over hashes
+   and control bindings. Nothing below it happens unless a person says so. #}
+{% if action_plan and plan and plan.total %}
+<div class="verdict {{ 'verdict-partial' if action_plan.is_open else 'verdict-readable' }}">
+  <div class="verdict-l">
+    <div class="t-caps">What does this change mean for {{ action_plan.firm }}?</div>
+    <div class="verdict-n">{{ action_plan.actions_recommended }}</div>
+    <p class="t-small">{{ action_plan.headline() }}</p>
+  </div>
+  <div class="verdict-figures">
+    <div class="vfig">
+      <div class="vfig-n">{{ action_plan.obligations_affected }}</div>
+      <div class="t-caps t-mute">Signed rules touched</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ action_plan.processes_affected }}</div>
+      <div class="t-caps t-mute">Processes</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ action_plan.controls_affected }}</div>
+      <div class="t-caps t-mute">Controls</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ action_plan.unowned }}</div>
+      <div class="t-caps t-mute">With no owner</div>
+    </div>
+  </div>
+</div>
+
+{% if action_plan.is_open %}
+  {% if user %}
+  <div class="nextstep">
+    <div>
+      <div class="t-caps t-mute">Nothing has been created yet</div>
+      <p class="nextstep-t">
+        Approving this creates {{ action_plan.actions_recommended }} remediation
+        task(s), one for each action below, recorded against your account.
+        Declining records that you looked and decided this firm takes no action,
+        which is a position somebody can answer for later. Silence is not.
+      </p>
+    </div>
+    <div class="inline-form">
+      <form method="post" action="{{ base }}/change/approve">
+        <input type="hidden" name="against" value="{{ against }}">
+        <input type="hidden" name="decision" value="approve">
+        <input class="field field-inline" name="note" placeholder="note, optional">
+        <button class="btn btn-solid" type="submit">Approve and create tasks</button>
+      </form>
+      <form method="post" action="{{ base }}/change/approve">
+        <input type="hidden" name="against" value="{{ against }}">
+        <input type="hidden" name="decision" value="decline">
+        <button class="btn btn-quiet" type="submit">Record that we take no action</button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="nextstep">
+    <div>
+      <div class="t-caps t-mute">Approving is a decision somebody signs for</div>
+      <p class="nextstep-t">
+        This plan is computed from the two documents and shown to anybody.
+        Approving it creates work against this firm and records who approved it,
+        so it needs an account.
+      </p>
+    </div>
+    <a class="btn btn-solid" href="/signin">Sign in to approve</a>
+  </div>
+  {% endif %}
+{% else %}
+<div class="caveats">
+  <div class="t-caps t-mute">Decision of record</div>
+  <p class="t-small">
+    {{ action_plan.headline() }}
+    {% if action_plan.note %}<br>Note: {{ action_plan.note }}{% endif %}
+  </p>
+</div>
+{% endif %}
+{% endif %}
+
+{% if not plan or not plan.total %}
+  <div class="nextstep">
+    <div>
+      <div class="t-caps t-mute">Nothing of this firm's is touched</div>
+      <p class="nextstep-t">
+        {% if changes.identical %}
+          The two editions parse to the same tree, so no certified rule in this
+          workspace has anything to answer for.
+        {% else %}
+          No certified rule in this workspace is affected by this amendment.
+          That is the correct answer rather than a failure to look. It usually
+          means the amended circular is a different rulebook from the one
+          signed here, or that the parts that moved were never compiled.
+        {% endif %}
+      </p>
+    </div>
+    <a class="btn" href="{{ base }}/processes">Open processes and controls</a>
+  </div>
+{% else %}
+<div class="gapbar">
+  <div class="gapstat {{ 'gapstat-bad' if plan.signatures_lost else '' }}">
+    <div class="gapstat-n">{{ plan.signatures_lost }}</div>
+    <div class="t-caps t-mute">Signatures no longer covering</div>
+    <div class="t-micro t-mute">
+      The clause a person signed was amended, removed or renumbered
+    </div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ plan.total }}</div>
+    <div class="t-caps t-mute">Actions for this firm</div>
+    <div class="t-micro t-mute">Everything below, grouped by process</div>
+  </div>
+  <div class="gapstat {{ 'gapstat-bad' if plan.unowned else '' }}">
+    <div class="gapstat-n">{{ plan.unowned }}</div>
+    <div class="t-caps t-mute">With nobody to do them</div>
+    <div class="t-micro t-mute">
+      {% if plan.unowned %}<a href="{{ base }}/processes">Assign an owner</a>
+      {% else %}Every action has a team{% endif %}
+    </div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ plan.unaffected }}</div>
+    <div class="t-caps t-mute">Certified and untouched</div>
+    <div class="t-micro t-mute">Came through the amendment unchanged</div>
+  </div>
+</div>
+
+{# Grouped the way the firm is organised, not the way the circular is
+   numbered, because the work is assigned by team. #}
+{% for process, actions in plan.by_process().items() %}
+<div class="changegroup">
+  <div class="changegroup-head">
+    <span class="t-caps t-mute">Process</span>
+    <span class="changegroup-n">{{ process }}</span>
+    <span class="t-micro t-mute">{{ actions|length }} action(s)</span>
+  </div>
+  <ul class="changelist">
+    {% for a in actions %}
+    <li class="changeitem changeitem-{{ a.kind.value|lower }}">
+      <div class="changeitem-head">
+        <span class="pill">{{ a.kind.label }}</span>
+        <a class="t-mono t-micro" href="{{ base }}/clause/{{ a.clause_id }}">clause {{ a.clause_id }}</a>
+        {% if a.obligation_id %}<span class="t-mono t-micro t-mute">{{ a.obligation_id }}</span>{% endif %}
+        {% if not a.is_owned %}<span class="badge badge-bad">no owner</span>{% endif %}
+      </div>
+      {% if a.requirement %}<p class="changeitem-req">{{ a.requirement }}</p>{% endif %}
+      <p class="t-small t-mute">{{ a.describe() }}</p>
+      {% if a.is_owned %}
+      <div class="changeitem-facts t-micro t-mute">
+        {% if a.function %}<span><span class="t-caps">Team</span> {{ a.function }}</span>{% endif %}
+        {% if a.system %}<span><span class="t-caps">System</span> {{ a.system }}</span>{% endif %}
+        {% if a.control_ref %}<span><span class="t-caps">Control</span> {{ a.control_ref }}</span>{% endif %}
+      </div>
+      {% endif %}
+      {% set task = raised.get(a.kind.value ~ '|' ~ a.clause_id ~ '|' ~ a.obligation_id) %}
+      <div class="changeitem-do">
+        {% if a.obligation_id %}
+        <a class="btn btn-quiet" href="{{ base }}/workbench/{{ a.obligation_id }}">Open the rule</a>
+        {% endif %}
+        {% if task %}
+          <span class="t-micro t-mute">
+            Task <a class="t-mono" href="{{ base }}/remediation#{{ task.task_id }}">{{ task.task_id }}</a>,
+            {{ task.status.value|lower|replace('_', ' ') }}{% if task.owner %}, owned by {{ task.owner }}{% endif %}
+          </span>
+        {% else %}
+          {# Raising it is a form rather than a link, because it writes to the
+             hash-chained log and a link that changes a record is a link a
+             browser may follow on its own. #}
+          <form method="post" action="{{ base }}/change/open" class="inline-form">
+            <input type="hidden" name="against" value="{{ against }}">
+            <input type="hidden" name="kind" value="{{ a.kind.value }}">
+            <input type="hidden" name="clause_id" value="{{ a.clause_id }}">
+            <input type="hidden" name="obligation_id" value="{{ a.obligation_id }}">
+            <input class="field field-inline" name="owner" placeholder="owner, optional">
+            <button class="btn btn-quiet" type="submit">Make this somebody's task</button>
+          </form>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endfor %}
+{% endif %}
+
+<p class="t-small t-mute">
+  Consequences are computed, not judged. A signature either still covers the
+  characters it was signed over or it does not. Everything after that is a
+  decision for a person, so nothing on this page re-certifies, withdraws or
+  closes anything by itself.
+</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Operational Mapping{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">From the clause to the desk that owes it</h1>
+  <p class="t-mute">
+    The problem statement asks for a requirement to be mapped to the affected
+    intermediary's operational processes. Knowing that a rule binds a stock
+    broker is not that. It has to reach the process, the team, the system that
+    holds the record and the written procedure, because those are the four
+    things somebody needs before they can act on a finding.
+  </p>
+</div>
+
+{% if not certified_count %}
+  <div class="empty empty-quiet">
+    <p class="t-subhead">Nothing has been certified in this document yet.</p>
+    <p class="t-mute">
+      A rule is mapped to a process after it is signed, not before. Work
+      through the <a href="{{ base }}/queue">queue</a> first.
+    </p>
+  </div>
+{% else %}
+
+<div class="gapbar">
+  <div class="gapstat">
+    <div class="gapstat-n">{{ coverage.mapped }}</div>
+    <div class="t-caps t-mute">Fully mapped</div>
+    <div class="t-micro t-mute">Process, team, system and procedure all named</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ coverage.bound - coverage.mapped }}</div>
+    <div class="t-caps t-mute">Partly mapped</div>
+    <div class="t-micro t-mute">Bound to somebody, but the chain stops short</div>
+  </div>
+  <div class="gapstat {{ 'gapstat-bad' if coverage.unbound else '' }}">
+    <div class="gapstat-n">{{ coverage.unbound }}</div>
+    <div class="t-caps t-mute">Nobody owns these</div>
+    <div class="t-micro t-mute">Signed rules with no operational owner at all</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ systems|length }}</div>
+    <div class="t-caps t-mute">Systems of record</div>
+    <div class="t-micro t-mute">Where the evidence actually lives</div>
+  </div>
+</div>
+
+{% if not chains %}
+  <div class="caveats caveats-warn">
+    <div class="t-caps">No rule has been mapped yet</div>
+    <p class="t-small">
+      Open any clause, sign the rule, and use the
+      <strong>Owned inside the firm by</strong> panel at the foot of it. Name
+      the process, the team, the system and the procedure, and the chain
+      appears here.
+    </p>
+  </div>
+{% else %}
+
+<div class="section-rule">
+  <span class="t-caps t-mute">Every mapped rule, grouped by process</span>
+</div>
+
+<ul class="cards">
+  {% for c in chains %}
+  <li class="chain chain-{{ c.status|lower }}">
+    <div class="chain-head">
+      <a class="t-mono chain-clause" href="{{ base }}/clause/{{ c.clause_id }}">{{ c.clause_id }}</a>
+      <span class="status {{ 'status-certified' if c.status == 'SATISFIED' else ('status-proposed' if c.status == 'UNDETERMINED' else 'status-rejected') }}">
+        {% if c.status == 'SATISFIED' %}met
+        {% elif c.status == 'NOT_ASSESSED' %}not assessed
+        {% elif c.status == 'NO_EVIDENCE' %}never evidenced
+        {% elif c.status == 'UNDETERMINED' %}needs a person
+        {% else %}{{ c.status.replace('_',' ')|lower }}{% endif %}
+      </span>
+      {% if c.task %}
+        <a class="t-micro" href="{{ base }}/remediation#{{ c.task.task_id }}">{{ c.task.task_id }}</a>
+      {% endif %}
+      {% if not c.binding.is_complete %}
+        <span class="badge badge-quiet">chain incomplete</span>
+      {% endif %}
+    </div>
+
+    <p class="chain-duty t-small">
+      {{ c.rule.modality.value|lower }} {{ c.rule.action.verb }} {{ c.rule.action.object[:80] }}
+    </p>
+
+    <!-- The chain itself, read left to right. Links the firm has not named
+         are simply absent rather than shown as empty boxes. -->
+    <ol class="chainlinks">
+      <li class="chainlink">
+        <span class="t-caps t-mute">clause</span>
+        <span class="t-mono">{{ c.clause_id }}</span>
+      </li>
+      {% for label, value in c.binding.chain() %}
+      <li class="chainlink">
+        <span class="t-caps t-mute">{{ label }}</span>
+        <span>{{ value }}</span>
+      </li>
+      {% endfor %}
+      {% if c.evidence %}
+      <li class="chainlink">
+        <span class="t-caps t-mute">evidence</span>
+        <span>{{ c.evidence|join(', ') }}</span>
+      </li>
+      {% endif %}
+      <li class="chainlink chainlink-end">
+        <span class="t-caps t-mute">check</span>
+        <span>{{ 'met' if c.status == 'SATISFIED' else c.status.replace('_',' ')|lower }}</span>
+      </li>
+    </ol>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if systems %}
+<div class="section-rule">
+  <span class="t-caps t-mute">Systems of record, by how much rides on them</span>
+</div>
+<table class="grid">
+  <colgroup><col style="width:60%"><col style="width:40%"></colgroup>
+  <thead><tr><th>System</th><th class="num">Duties it carries</th></tr></thead>
+  <tbody>
+    {% for name, count in systems.items() %}
+    <tr><td>{{ name }}</td><td class="num t-mono">{{ count }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="t-small t-mute" style="margin-top:var(--s-3)">
+  A system carrying many duties is a single point of failure the firm may not
+  have noticed. If it goes down or its export format changes, every duty above
+  it loses its evidence at once.
+</p>
+{% endif %}
+
+<div class="caveats">
+  <div class="t-caps t-mute">How to read this</div>
+  <ul>
+    <li class="t-small">
+      The clause and the required evidence come from the signed rule. The
+      process, team, system and procedure come from the firm, because two firms
+      reading the same certified rule will organise themselves differently and
+      both be right.
+    </li>
+    <li class="t-small">
+      Bindings are held beside the rulebook rather than inside it. Recording one
+      never alters the bytes a signature covers, so the 183 certifications stay
+      valid however the firm reorganises.
+    </li>
+    <li class="t-small">
+      The check at the end of each chain is the live result from the
+      deterministic engine, not a stored status.
+    </li>
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

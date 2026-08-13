@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sanhita"
+version = "0.1.0"
+description = "A regulation compiler for India's securities markets. Probabilistic in the loop, deterministic at the core, human certified at the boundary."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+
+# The core: parse, compile, certify and execute. Everything here runs offline
+# with no network access of any kind.
+dependencies = [
+    "pydantic>=2.7",
+    # Pinned exactly, and this is not fussiness.
+    #
+    # The clause tree is built from the text PyMuPDF extracts, and successive
+    # releases extract slightly differently. 1.27.2.2 and 1.28.2 read the same
+    # bytes of the same circular into different clause trees, which produce
+    # different tree fingerprints and therefore different clause hashes.
+    #
+    # Every one of the 183 certifications in .sanhita/rules.json carries a
+    # SHA-256 of the clause text it was signed over, taken with 1.27.2. Install
+    # a different version and those hashes stop matching the text the parser
+    # now produces, so signed rules appear to point at clauses that changed
+    # when nothing changed at all. The product's central claim is that a rule
+    # traces to an exact clause and its hash; a floating parser dependency
+    # quietly breaks it.
+    #
+    # Upgrading is allowed, but it is a corpus migration: re-parse, re-hash,
+    # and re-certify. It is not a version bump.
+    "PyMuPDF==1.27.2.2",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+# The certification workbench. python-multipart is not optional in practice:
+# FastAPI needs it to read the certify, reject and amend forms, and without it
+# every POST in the workbench fails at request parsing.
+web = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+]
+# The model-assisted extractor. Optional by design: the rules engine compiles
+# the whole corpus with no key and no network.
+llm = ["anthropic>=0.96"]
+# Reading a firm's filing register when it arrives as a spreadsheet. Optional
+# because the product must install and run without it, and because CSV is the
+# format every risk system in the country can already export. The ingest code
+# imports it lazily and says so when it is absent, rather than raising.
+xlsx = ["openpyxl>=3.1"]
+
+[project.scripts]
+sanhita = "sanhita.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# The workbench is Jinja templates and hand-written CSS with no build step, so
+# those files *are* the application, not artifacts of it. Without this they are
+# left out of the wheel and an installed copy raises at import:
+#
+#     RuntimeError: Directory '.../sanhita/web/static' does not exist
+#
+# Running from a source checkout hides the problem, because the files are found
+# next to the code either way. It only appears once somebody installs the
+# package, which is exactly what a container does.
+[tool.setuptools.package-data]
+sanhita = [
+    "web/templates/*.html",
+    "web/static/*.css",
+    "web/static/*.js",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

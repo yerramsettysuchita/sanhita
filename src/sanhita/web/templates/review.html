@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Company Evidence{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="t-caps t-mute">Stage 2 of 5</div>
+  <h1 class="t-title">What your documents said, and what it means</h1>
+  <p class="t-mute">
+    A margin report does not contain a Sanhita rule id, because it was written
+    years before Sanhita existed. So an upload produces candidates rather than
+    conclusions, and somebody has to say which duty each one discharges.
+    Sanhita will not guess. Two passages being similar is not proof that a duty
+    was performed, and a tool that treats it as proof will eventually tell a
+    firm it is compliant when it is not.
+  </p>
+</div>
+
+{# The upload lives here, where evidence belongs. It used to live on the gaps
+   screen, which produced a loop: the company screen sent you here, this page
+   sent you to Gaps to upload, and Gaps sent you back. #}
+{% include "_evidence_dropzone.html" %}
+
+<p class="t-small t-mute upload-note">
+  A CSV or JSON export that names the requirement becomes evidence straight
+  away. <a href="/evidence-template.csv">Download the column template</a> to see
+  the shape. A report or a spreadsheet usually names nothing, so whatever it
+  finds is held below for you to confirm rather than guessed at.
+</p>
+
+{# An assessment says where the firm stood against the records it had on the
+   day somebody ran it. This says whether those records are still arriving,
+   which is the thing that actually goes wrong: a register uploaded once during
+   onboarding looks exactly like a register kept up to date. #}
+{% if evidence_health and evidence_health.records %}
+<div class="section-rule">
+  <span class="t-caps t-mute">Are the records still arriving?</span>
+</div>
+
+<div class="verdict {{ 'verdict-unreadable' if evidence_health.is_quiet else ('verdict-partial' if evidence_health.needing_attention else 'verdict-readable') }}">
+  <div class="verdict-l">
+    <div class="t-caps">Evidence health</div>
+    <div class="verdict-n">{{ evidence_health.needing_attention }}</div>
+    <p class="t-small">{{ evidence_health.headline() }}</p>
+  </div>
+  <div class="verdict-figures">
+    <div class="vfig">
+      <div class="vfig-n">{{ evidence_health.watched }}</div>
+      <div class="t-caps t-mute">Duties watched</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ evidence_health.of('NEVER_RECORDED')|length }}</div>
+      <div class="t-caps t-mute">Never recorded</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ evidence_health.of('GONE_QUIET')|length }}</div>
+      <div class="t-caps t-mute">Stopped arriving</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ evidence_health.current }}</div>
+      <div class="t-caps t-mute">Up to date</div>
+    </div>
+  </div>
+</div>
+
+<p class="t-small t-mute">
+  Read over the {{ (evidence_health.as_of - evidence_health.since).days }} days to
+  {{ evidence_health.as_of.strftime('%d %b %Y') }}, from {{ evidence_health.records }} record(s)
+  {% if evidence_health.earliest_record %}
+    spanning {{ evidence_health.earliest_record.strftime('%d %b %Y') }} to
+    {{ evidence_health.latest_record.strftime('%d %b %Y') }}{% endif %}.
+  {# The single most important sentence on this screen. #}
+  <strong>None of this is a compliance finding.</strong> A duty with no record
+  is very often one discharged perfectly on paper that nobody uploaded. What is
+  being reported is that nothing here knows either way.
+</p>
+
+{% if evidence_health.assessment_is_stale %}
+<p class="t-small warn">
+  The recorded assessment was taken against different records from the ones
+  here now, so the position on the overview is history rather than this firm's
+  current position. <a href="{{ base }}/company">Run it again</a>.
+</p>
+{% endif %}
+
+{% if evidence_health.needing_attention %}
+{% for team, rules in evidence_health.by_function().items() %}
+<div class="changegroup">
+  <div class="changegroup-head">
+    <span class="t-caps t-mute">Team</span>
+    <span class="changegroup-n">{{ team }}</span>
+    <span class="t-micro t-mute">{{ rules|length }} duty(s) to chase</span>
+  </div>
+  <ul class="changelist">
+    {% for r in rules %}
+    <li class="changeitem changeitem-{{ r.signal.value|lower }}">
+      <div class="changeitem-head">
+        <span class="pill">{{ r.signal.label }}</span>
+        <a class="t-mono t-micro" href="{{ base }}/clause/{{ r.clause_id }}">clause {{ r.clause_id }}</a>
+        <span class="t-mono t-micro t-mute">{{ r.obligation_id }}</span>
+        {% if r.period %}<span class="t-micro t-mute">every {{ r.period|lower }}</span>{% endif %}
+        {% if not r.is_owned %}<span class="badge badge-bad">no owner</span>{% endif %}
+      </div>
+      {% if r.requirement %}<p class="changeitem-req">{{ r.requirement }}</p>{% endif %}
+      <p class="t-small t-mute">{{ r.describe() }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="section-rule">
+  <span class="t-caps t-mute">What was uploaded</span>
+</div>
+{% endif %}
+
+{% if not summary.total %}
+  <div class="empty empty-quiet">
+    <p class="t-subhead">Nothing has been uploaded yet.</p>
+    <p class="t-mute">
+      Drop a file above and Sanhita will read it. Whatever it finds appears here
+      with the page and the words that produced it, for you to confirm.
+    </p>
+  </div>
+{% else %}
+
+<div class="gapbar">
+  <div class="gapstat {{ 'gapstat-bad' if summary.awaiting else '' }}">
+    <div class="gapstat-n">{{ summary.awaiting }}</div>
+    <div class="t-caps t-mute">Awaiting your decision</div>
+    <div class="t-micro t-mute">None of these count as evidence yet</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ summary.mapped }}</div>
+    <div class="t-caps t-mute">Mapped to a rule</div>
+    <div class="t-micro t-mute">These are what the engine runs against</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ summary.dismissed }}</div>
+    <div class="t-caps t-mute">Dismissed</div>
+    <div class="t-micro t-mute">Kept, so the decision stays answerable</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ summary.documents }}</div>
+    <div class="t-caps t-mute">Documents read</div>
+    <div class="t-micro t-mute">
+      {% for name, count in documents.items() %}{{ name }} ({{ count }}){% if not loop.last %}, {% endif %}{% endfor %}
+    </div>
+  </div>
+</div>
+
+{# Stage two hands off to stage three. This screen used to end with the queue
+   and nothing else, and the only route onward was the masthead. A page that
+   reports a situation and offers no next action is where a first-time user
+   stops. #}
+{% if summary.mapped %}
+<div class="nextstep nextstep-lead">
+  <div>
+    <div class="t-caps t-mute">Next</div>
+    <p class="nextstep-t">
+      {{ summary.mapped }} record(s) are mapped to a requirement, so the
+      certified rules can now be run against them.
+      {% if summary.awaiting %}
+        The {{ summary.awaiting }} still awaiting your decision will not be
+        included until you rule on them.
+      {% endif %}
+    </p>
+  </div>
+  <a class="btn btn-solid btn-lg" href="{{ base }}/gaps">See your compliance result</a>
+</div>
+{% elif summary.awaiting %}
+<div class="nextstep">
+  <div>
+    <div class="t-caps t-mute">Next</div>
+    <p class="nextstep-t">
+      Nothing has been mapped yet, so there is nothing for the engine to run
+      against. Confirm which requirement each record below satisfies, and the
+      compliance result becomes available.
+    </p>
+  </div>
+</div>
+{% endif %}
+
+{% if awaiting %}
+<div class="section-rule">
+  <span class="t-caps t-mute">Most likely to be real, first</span>
+</div>
+
+<ul class="cards">
+  {% for item in awaiting %}
+  {% set c = item.candidate %}
+  <li class="rvitem rvitem-{{ c.confidence.value|lower }}" id="{{ item.item_id }}">
+    <div class="rvitem-head">
+      <span class="t-mono rvitem-id">{{ item.item_id }}</span>
+      <span class="status {{ 'status-proposed' if c.confidence.value == 'PROBABLE' else 'status-rejected' }}">
+        {{ c.confidence.value|lower }}
+      </span>
+      <span class="t-micro t-mute">{{ c.where() }}</span>
+    </div>
+
+    <!-- The words that produced this. A reviewer who cannot see the source
+         cannot judge it. -->
+    <blockquote class="cite-verbatim">{{ c.excerpt }}</blockquote>
+
+    <div class="rvitem-facts t-small">
+      {% if c.occurred_on %}
+        <span><span class="t-caps t-mute">Date</span> {{ c.occurred_on.strftime('%d %b %Y') }}</span>
+      {% endif %}
+      {% if c.filed_on %}
+        <span><span class="t-caps t-mute">Filed</span> {{ c.filed_on.strftime('%d %b %Y') }}</span>
+      {% endif %}
+      {% if c.reference %}
+        <span><span class="t-caps t-mute">Reference</span> {{ c.reference }}</span>
+      {% endif %}
+    </div>
+
+    <p class="t-micro t-mute rvitem-why">{{ c.why }}</p>
+
+    {% if not c.occurred_on %}
+      <p class="t-small warn">
+        This carries no date, so there is no occasion for a rule to be checked
+        against. It cannot become evidence and can only be dismissed.
+      </p>
+      <form method="post" action="{{ base }}/review/{{ item.item_id }}/dismiss">
+        <input class="field" type="text" name="reason" placeholder="why is this not evidence?">
+        <button class="btn">Dismiss</button>
+      </form>
+    {% else %}
+      {# Ranked, not chosen. Nothing is preselected and nothing is hidden: the
+         full list of every certified rule is still in the dropdown below. A
+         default that is right most of the time turns a judgement into a
+         keystroke, and the mistakes it makes are the invisible kind. #}
+      {% set ranked = suggestions.get(item.item_id) %}
+      {% if ranked %}
+      <div class="rvsuggest">
+        <div class="t-caps t-mute">Most likely, by wording. You decide</div>
+        <ul class="rvsuggest-list">
+          {% for s in ranked %}
+          <li>
+            <form method="post" action="{{ base }}/review/{{ item.item_id }}/map">
+              <input type="hidden" name="obligation_id" value="{{ s.obligation.id }}">
+              <div class="rvsuggest-t">
+                <span class="rvsuggest-c t-mono">{{ s.obligation.source.clause_id }}</span>
+                <span>{{ s.obligation.action.verb }} {{ s.obligation.action.object[:70] }}</span>
+              </div>
+              <div class="t-micro t-mute rvsuggest-why">
+                {% if s.artifact_match %}
+                  Requires {{ s.obligation.evidence[0].artifact_type }}, which is
+                  what this record is.
+                {% endif %}
+                {% if s.matched %}
+                  Shared wording: {{ s.matched|join(', ') }}.
+                {% endif %}
+                <a href="{{ base }}/clause/{{ s.obligation.source.clause_id }}">Read the clause</a>
+              </div>
+              <button class="btn">This one</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="t-micro t-mute">
+          An ordering by shared words, not a reading of either document. Check
+          the clause before you agree with it.
+        </p>
+      </div>
+      {% endif %}
+
+      <div class="rvitem-actions">
+        <form method="post" action="{{ base }}/review/{{ item.item_id }}/map">
+          <label class="t-caps">
+            {% if ranked %}Or choose any other requirement{% else %}This satisfies{% endif %}
+            <select class="field" name="obligation_id" required>
+              <option value="">choose the rule</option>
+              {% for o in certified %}
+              <option value="{{ o.id }}">
+                {{ o.source.clause_id }} &middot; {{ o.action.verb }} {{ o.action.object[:48] }}
+              </option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="btn btn-solid">Map it</button>
+        </form>
+
+        <form method="post" action="{{ base }}/review/{{ item.item_id }}/dismiss">
+          <input class="field" type="text" name="reason" placeholder="not evidence, because...">
+          <button class="btn btn-quiet">Dismiss</button>
+        </form>
+      </div>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if mapped %}
+<div class="section-rule">
+  <span class="t-caps t-mute">Mapped, and now running against the rulebook</span>
+</div>
+<table class="grid">
+  <colgroup>
+    <col style="width:12%"><col style="width:16%"><col style="width:14%">
+    <col style="width:24%"><col style="width:34%">
+  </colgroup>
+  <thead><tr>
+    <th>Item</th><th>Rule</th><th>Date</th><th>Mapped by</th><th>From</th>
+  </tr></thead>
+  <tbody>
+    {% for item in mapped %}
+    <tr>
+      <td class="t-mono t-small">{{ item.item_id }}</td>
+      <td class="t-mono t-small">{{ item.mapped_obligation }}</td>
+      <td class="t-small">
+        {{ item.candidate.occurred_on.strftime('%d %b %Y') if item.candidate.occurred_on }}
+      </td>
+      <td class="t-small">{{ item.mapped_by }}</td>
+      <td class="t-small">{{ item.candidate.where() }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if dismissed %}
+<div class="section-rule">
+  <span class="t-caps t-mute">Dismissed, and kept anyway</span>
+</div>
+<table class="grid">
+  <colgroup><col style="width:12%"><col style="width:24%"><col style="width:30%"><col style="width:34%"></colgroup>
+  <thead><tr><th>Item</th><th>By</th><th>Reason</th><th>From</th></tr></thead>
+  <tbody>
+    {% for item in dismissed %}
+    <tr>
+      <td class="t-mono t-small">{{ item.item_id }}</td>
+      <td class="t-small">{{ item.mapped_by }}</td>
+      <td class="t-small">{{ item.dismissed_reason }}</td>
+      <td class="t-small">{{ item.candidate.where() }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="t-small t-mute" style="margin-top:var(--s-3)">
+  Dismissals are kept rather than deleted. A reviewer who ruled that a page of a
+  margin report was not evidence should be answerable for that later, and a
+  queue that forgets its rejections cannot show one.
+</p>
+{% endif %}
+
+<div class="caveats">
+  <div class="t-caps t-mute">How this works</div>
+  <ul>
+    <li class="t-small">
+      Nothing awaiting review reaches the engine. An unreviewed upload cannot
+      become a compliance conclusion.
+    </li>
+    <li class="t-small">
+      A document that names a rule outright, which a CSV export usually does,
+      is mapped by the document itself and needs no confirmation.
+    </li>
+    <li class="t-small">
+      When a candidate becomes evidence it carries its source with it. The
+      document, the page, the row and the words. A gap report cites the clause
+      to the byte, and the evidence on the other side now answers back.
+    </li>
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% include "_evidence_dropzone_js.html" %}
+{% endblock %}

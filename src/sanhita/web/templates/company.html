@@ -1,0 +1,961 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - My Firm{% endblock %}
+
+{# The profile form, defined once and placed differently depending on whether
+   there is a firm yet. Setting up, it is the whole page. Afterwards it is the
+   last thing on the page, because by then it is an edit rather than a step. #}
+{% macro company_form(company, intermediaries, base) %}
+<form class="coform" method="post" action="{{ base }}/company/save">
+  <div class="coform-grid">
+    <label class="t-caps">Firm name
+      <input class="field" type="text" name="name" required
+             placeholder="ABC Securities Pvt Ltd"
+             value="{{ company.name if company else '' }}">
+    </label>
+    <label class="t-caps">Intermediary type
+      <select class="field" name="intermediary">
+        {% for kind in intermediaries %}
+        <option value="{{ kind.value }}"
+          {{ 'selected' if company and company.intermediary == kind }}>
+          {{ kind.label }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="t-caps">SEBI registration
+      <input class="field" type="text" name="registration" placeholder="INZ000000000"
+             value="{{ company.registration if company else '' }}">
+    </label>
+  </div>
+
+  <div class="coform-grid">
+    <label class="t-caps">Business processes, one per line
+      <textarea class="field" name="processes" rows="5"
+        placeholder="Daily margin reporting&#10;Client onboarding&#10;Trade reporting">{{ company.processes|join('\n') if company else '' }}</textarea>
+    </label>
+    <label class="t-caps">Systems of record, one per line
+      <textarea class="field" name="systems" rows="5"
+        placeholder="Margin engine&#10;CRM&#10;Trade reporting system">{{ company.systems|join('\n') if company else '' }}</textarea>
+    </label>
+    <label class="t-caps">Business facts, one per line
+      <textarea class="field" name="facts" rows="5"
+        placeholder="Offers derivatives&#10;Has retail clients&#10;-Offers portfolio management">{% if company %}{% for fact, yes in company.business_facts.items() %}{{ '' if yes else '-' }}{{ fact }}
+{% endfor %}{% endif %}</textarea>
+    </label>
+  </div>
+
+  <div class="coform-actions">
+    <button class="btn btn-solid btn-lg">
+      {{ 'Update this firm' if company else 'Save and continue' }}
+    </button>
+    <span class="t-micro t-mute">
+      Prefix a fact with a minus sign to record it as no. These answers exist
+      because many SEBI duties are conditional and the conditions are prose
+      rather than machine tests, so a person answering is more honest than a
+      system inferring.
+    </span>
+  </div>
+</form>
+{% endmacro %}
+
+{# Which SEBI frameworks govern this firm, declared by a person.
+   The firm is the root object here: it holds a list of rulebooks, rather than
+   each rulebook holding a copy of the firm. A stock broker that also runs a
+   research arm ticks two boxes and stays one company. #}
+{% macro framework_picker(company, available_frameworks, viewing, base) %}
+<section class="frameworks" id="frameworks">
+  <div class="frameworks-head">
+    <div>
+      <div class="t-caps t-mute">Regulatory frameworks</div>
+      <h2 class="t-subhead">Which SEBI rulebooks apply to {{ company.name }}?</h2>
+    </div>
+  </div>
+  <p class="t-small t-mute frameworks-p">
+    A rulebook only assesses this firm once somebody has said it governs it.
+    Each one below says how much of it has been certified, because a rulebook
+    with nothing signed in it cannot produce a finding either way.
+  </p>
+
+  <form method="post" action="{{ base }}/company/frameworks">
+    <ul class="framepick">
+      {% for f in available_frameworks %}
+      <li class="{{ 'is-on' if f.declared }}">
+        <label>
+          <input type="checkbox" name="framework" value="{{ f.id }}"
+                 {{ 'checked' if f.declared }}>
+          <span class="framepick-t">
+            <span class="framepick-n">
+              {{ f.name }}
+              {% if f.id == viewing %}<span class="badge badge-quiet">viewing</span>{% endif %}
+            </span>
+            <span class="t-micro t-mute">
+              {% if f.certified %}
+                {{ f.certified }} certified of {{ f.total }} compiled
+              {% else %}
+                Nothing certified yet, so this rulebook cannot assess anything
+              {% endif %}
+              {% if f.issued_on %} &middot; issued {{ f.issued_on.strftime('%d %b %Y') }}{% endif %}
+            </span>
+          </span>
+        </label>
+        {% if f.declared and f.id != viewing %}
+          <a class="t-micro" href="/w/{{ f.id }}/company">Open this one</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="frameworks-actions">
+      <button class="btn btn-solid btn-lg">Save which frameworks apply</button>
+      {# The firm declares a framework. Bringing a new SEBI PDF in to be
+         compiled is the other persona's job, and saying "rulebook" here
+         made a compliance officer think they had to find a circular. #}
+      <a class="btn btn-quiet" href="/documents">Add another applicable framework</a>
+    </div>
+  </form>
+</section>
+{% endmacro %}
+
+{% block content %}
+
+{% if not company %}
+{# One question at a time.
+   This screen used to answer the whole product at once: it asked whose
+   compliance this was, and then, above the form that answers that, offered to
+   upload evidence, showed how many requirements were certified, and listed
+   what falls due in thirty days. A first-time visitor met "Upload compliance
+   evidence" before there was a firm to hold the evidence against.
+
+   So until the firm is named there is nothing on this page but naming it. #}
+<div class="page-head">
+  <div class="t-caps t-mute">Step 1 of 3, setting up</div>
+  <h1 class="t-title">Whose compliance is this?</h1>
+  <p class="t-mute">
+    Every other screen here answers a question about the regulation. This one
+    answers a question about your firm, and it needs to know which firm before
+    it can. Nothing below is stored anywhere but this machine.
+  </p>
+</div>
+
+<ol class="setupsteps">
+  <li class="is-now"><span class="setupsteps-n">1</span> Tell Sanhita about your firm</li>
+  <li><span class="setupsteps-n">2</span> Say which SEBI rulebooks apply to it</li>
+  <li><span class="setupsteps-n">3</span> Upload your compliance evidence</li>
+</ol>
+
+{{ company_form(company, intermediaries, base) }}
+
+{% elif not company.frameworks %}
+{# Step two, and the only thing on the page.
+   A firm exists but has not said which SEBI rulebooks govern it, so there is
+   nothing to assess it against and no honest reason to offer an upload yet. #}
+<div class="page-head">
+  <div class="t-caps t-mute">Step 2 of 3, setting up</div>
+  <h1 class="t-title">Which SEBI rulebooks apply to {{ company.name }}?</h1>
+  <p class="t-mute">
+    Sanhita will not decide this for you. Which framework governs a firm is a
+    legal judgement with consequences, so it is recorded as something a named
+    person declared rather than something a tool inferred from your intermediary
+    category.
+  </p>
+</div>
+
+<ol class="setupsteps">
+  <li class="is-done"><span class="setupsteps-n">1</span> {{ company.name }} recorded</li>
+  <li class="is-now"><span class="setupsteps-n">2</span> Say which SEBI rulebooks apply to it</li>
+  <li><span class="setupsteps-n">3</span> Upload your compliance evidence</li>
+</ol>
+
+{{ framework_picker(company, available_frameworks, viewing, base) }}
+
+<p class="t-small t-mute setup-aside">
+  Something wrong above? You can change {{ company.name }}'s details from the
+  overview once you are set up. This step is only about which rulebooks govern
+  the firm.
+</p>
+
+{% elif setup_step == 3 %}
+{# Step three, a real screen rather than a line on the dashboard.
+   Saving a framework used to drop somebody straight onto the overview, where
+   "upload compliance evidence" was one call to action among fourteen other
+   numbers. Setting up is three answers, so it is three screens. #}
+<div class="page-head">
+  <div class="t-caps t-mute">Step 3 of 3, setting up</div>
+  <h1 class="t-title">Bring your compliance evidence</h1>
+  <p class="t-mute">
+    Now give Sanhita the records that show how {{ company.name }} actually
+    satisfies its obligations. These are your own documents, not SEBI's. The
+    circular is already here.
+  </p>
+</div>
+
+<ol class="setupsteps">
+  <li class="is-done"><span class="setupsteps-n">1</span> {{ company.name }} recorded</li>
+  <li class="is-done"><span class="setupsteps-n">2</span> {{ framework }} declared</li>
+  <li class="is-now"><span class="setupsteps-n">3</span> Upload your compliance evidence</li>
+</ol>
+
+{% include "_evidence_dropzone.html" %}
+
+<div class="setup-examples">
+  <div>
+    <div class="t-caps t-mute">What to bring</div>
+    <ul class="t-small">
+      <li>Reports and filing registers</li>
+      <li>Dispatch logs</li>
+      <li>Acknowledgements and receipts</li>
+      <li>Certificates</li>
+    </ul>
+  </div>
+  <div>
+    <div class="t-caps t-mute">What is read</div>
+    <ul class="t-small">
+      <li>PDF</li>
+      <li>CSV</li>
+      <li>XLSX</li>
+      <li>JSON</li>
+    </ul>
+  </div>
+  <div>
+    <div class="t-caps t-mute">What happens next</div>
+    <p class="t-small">
+      Whatever a document appears to say is held for you to confirm. Nothing
+      becomes evidence, and nothing reaches the engine, until a person says
+      which requirement it satisfies.
+    </p>
+  </div>
+</div>
+
+<div class="nextstep nextstep-lead">
+  <div>
+    <div class="t-caps t-mute">{{ 'Evidence received' if review.total else 'Nothing uploaded yet' }}</div>
+    <p class="nextstep-t">
+      {% if review.total %}
+        {{ review.total }} item(s) were read from your documents.
+        {% if review.awaiting %}
+          {{ review.awaiting }} of them need you to confirm which requirement
+          they satisfy.
+        {% endif %}
+      {% else %}
+        You can finish setting up without uploading anything. There will simply
+        be nothing to assess until you do, and Sanhita will say so rather than
+        score you on records it does not have.
+      {% endif %}
+    </p>
+  </div>
+  <form method="post" action="{{ base }}/setup/complete">
+    <button class="btn btn-solid btn-lg">
+      {{ 'Continue to evidence review' if review.total else 'Finish without evidence for now' }}
+    </button>
+  </form>
+</div>
+
+{% else %}
+<div class="page-head">
+  <div class="cohead">
+    <div>
+      <div class="t-caps t-mute">Stage 1 of 5</div>
+      <h1 class="t-title">{{ company.name }}</h1>
+      <p class="t-mute cohead-sub">
+        {{ company.intermediary.label }}
+        {% if company.registration %} &middot; {{ company.registration }}{% endif %}
+        {% if company.synthetic %}
+          <span class="badge badge-quiet">synthetic demo firm</span>
+        {% endif %}
+      </p>
+    </div>
+    {% if health is not none %}
+    {# Never "overall company compliance".
+       A firm may declare several rulebooks, and each is assessed on its own.
+       Calling one framework's figure the firm's compliance would be the single
+       most overstated number this product could print, so the caption names
+       the framework it belongs to. #}
+    <div class="cohealth {{ 'is-good' if health >= 80 else ('is-mid' if health >= 50 else 'is-bad') }}">
+      <div class="cohealth-n t-mono">{{ health }}%</div>
+      <div class="t-caps t-mute">Of what could be determined</div>
+      <div class="t-micro t-mute">
+        {{ compliant }} met of {{ determined }} the records settle, in
+        {{ framework }}{% if unverified %}. {{ unverified }} more could not be
+        determined either way and are not in this figure{% endif %}
+        {%- if company.frameworks|length > 1 %}. One of
+          {{ company.frameworks|length }} declared frameworks
+        {%- endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# Which rulebook this firm is being held to, stated rather than assumed. A
+   compliance position means nothing without the framework it was measured
+   against and the moment it was measured. #}
+<div class="framebar">
+  <div class="framebar-i">
+    <div class="t-caps t-mute">Assessed against</div>
+    <div class="framebar-v">{{ framework }}</div>
+    <div class="t-micro t-mute t-mono">
+      {% if framework_sha %}sha256 {{ framework_sha[:16] }}{% else %}hash not recorded{% endif %}
+    </div>
+  </div>
+  <div class="framebar-i">
+    <div class="t-caps t-mute">Rules in force</div>
+    <div class="framebar-v">{{ certified_count }} certified</div>
+    <div class="t-micro t-mute">{{ total_rules }} compiled, the rest unsigned</div>
+  </div>
+  <div class="framebar-i">
+    <div class="t-caps t-mute">Last assessed</div>
+    <div class="framebar-v">
+      {% if last_run %}{{ last_run.ran_at.strftime('%d %B %Y, %H:%M') }} UTC
+      {% else %}Never{% endif %}
+    </div>
+    <div class="t-micro t-mute">
+      {% if last_run %}
+        By {{ last_run.ran_by }}, run {{ last_run.short_id }}
+      {% else %}
+        No assessment has been recorded for this firm
+      {% endif %}
+    </div>
+  </div>
+  <div class="framebar-i">
+    <div class="t-caps t-mute">Frameworks declared</div>
+    <div class="framebar-v">
+      {{ company.frameworks|length }} declared, 1 assessed here
+    </div>
+    <div class="t-micro t-mute"><a href="#frameworks">Change which ones apply</a></div>
+  </div>
+</div>
+
+{% if company.frameworks|length > 1 %}
+{# Said plainly, because the alternative is a reader assuming otherwise.
+   Each rulebook is assessed on its own. There is no combined figure, and
+   inventing one would mean averaging duties that are not comparable. #}
+<div class="caveats">
+  <div class="t-caps t-mute">What this assessment covers</div>
+  <p class="t-small">
+    {{ company.name }} has declared {{ company.frameworks|length }} applicable
+    frameworks. Everything on this screen is
+    <strong>{{ framework }}</strong> alone. Each framework is assessed
+    separately and there is no combined figure, because duties under different
+    circulars are not comparable and averaging them would produce a number that
+    means nothing. Use the list below to open another one.
+  </p>
+</div>
+{% endif %}
+
+{{ framework_picker(company, available_frameworks, viewing, base) }}
+{% endif %}
+
+{# Everything below is the firm's compliance position, and none of it means
+   anything until setting up is finished. Rendering it during setup is what
+   put "Falling due in 30 days" underneath "Step 3 of 3". #}
+{% if not setup_step %}
+
+{# A regulatory change happens on SEBI's calendar, not on the compliance
+   officer's, so the question is asked here on every load rather than waiting
+   for somebody to remember that a comparison screen exists.
+
+   The qualification below is not decoration. A firm that believed this polled
+   sebi.gov.in would read silence as cover, and it watches nothing but the
+   documents somebody brought to this installation. #}
+{% if watch and watch.undated %}
+<div class="caveats caveats-warn">
+  <div class="t-caps">
+    {{ watch.undated|length }} declared rulebook(s) cannot be placed in time
+  </div>
+  <p class="t-small">
+    {{ watch.undated|join(', ') }}. Sanhita reads the issue date off the
+    circular's own first page, and could not find one here, so it cannot say
+    whether these are later editions than the one in use. They are named rather
+    than skipped, because an edition nothing can order is the one most likely to
+    be a later circular nobody has noticed.
+  </p>
+</div>
+{% endif %}
+
+{% if watch and watch.editions %}
+<div class="verdict {{ 'verdict-unreadable' if watch.waiting else ('verdict-partial' if watch.needing_attention else 'verdict-readable') }}">
+  <div class="verdict-l">
+    <div class="t-caps">Has the regulation moved?</div>
+    <div class="verdict-n">{{ watch.needing_attention }}</div>
+    <p class="t-small">{{ watch.headline() }}</p>
+  </div>
+  {# Counts rather than one tile per edition. With a single edition on file the
+     per-edition version printed its state twice, once here and once on the row
+     below it. #}
+  <div class="verdict-figures">
+    <div class="vfig">
+      <div class="vfig-n">{{ watch.waiting }}</div>
+      <div class="t-caps t-mute">Not looked at</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ watch.editions|length - watch.waiting }}</div>
+      <div class="t-caps t-mute">Compared</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ certified_count }}</div>
+      <div class="t-caps t-mute">Signed rules at stake</div>
+    </div>
+  </div>
+</div>
+
+<ul class="changelist">
+  {% for e in watch.editions %}
+  <li class="changeitem changeitem-{{ e.state.value|lower }}">
+    <div class="changeitem-head">
+      <span class="pill">{{ e.state.label }}</span>
+      <span class="t-small">{{ e.name }}</span>
+      {% if e.issued_on %}
+        <span class="t-micro t-mute">issued {{ e.issued_on.strftime('%d %b %Y') }}</span>
+      {% endif %}
+    </div>
+    <p class="t-small t-mute">{{ e.describe() }}</p>
+    <div class="changeitem-do">
+      <a class="btn btn-quiet" href="/w/{{ e.workspace_id }}/diff?against={{ workspace.id }}">
+        Compare it against the one in use
+      </a>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+
+<p class="t-micro t-mute">
+  Sanhita watches the documents brought to this installation. It does not poll
+  sebi.gov.in, subscribe to a feed or fetch anything over a network, so a
+  circular published this week is invisible here until somebody uploads it.
+  What this removes is the other failure, where the newer circular has been
+  sitting in the system since March and nobody ever ran the comparison.
+</p>
+{% endif %}
+
+{# The problem statement singles out firms with limited compliance resources.
+   The honest answer to that is not a simplified mode: it is that the same
+   regulation lands on a team of two as on a team of forty, and the team of two
+   cannot triage eighty items by reading them. #}
+{% if worklist and worklist.total %}
+<div class="section-rule">
+  <span class="t-caps t-mute">What should we fix first?</span>
+</div>
+
+<p class="t-small t-mute">
+  {{ worklist.headline() }}
+  Ranked from the deadline, whether a signature still covers the clause, whether
+  records are arriving, how often the duty recurs, and whether anybody owns it.
+  <strong>This is not a legal risk opinion.</strong> It is those five facts,
+  added up the same way every time, and each row says which of them fired.
+</p>
+
+<ul class="changelist">
+  {% for item in worklist.top %}
+  <li class="changeitem changeitem-{{ item.band.value|lower }}">
+    <div class="changeitem-head">
+      <span class="pill">{{ item.band.label }}</span>
+      <span class="t-small">{{ item.title }}</span>
+      {% if item.clause_id %}
+        <a class="t-mono t-micro" href="{{ base }}/clause/{{ item.clause_id }}">clause {{ item.clause_id }}</a>
+      {% endif %}
+      {% if item.due_date %}
+        <span class="t-micro t-mute">due {{ item.due_date.strftime('%d %b %Y') }}</span>
+      {% endif %}
+      {% if not item.is_owned %}<span class="badge badge-bad">no owner</span>{% endif %}
+    </div>
+    <p class="t-small t-mute">{{ item.describe() }}</p>
+    <div class="changeitem-do">
+      <a class="btn btn-quiet" href="{{ item.link }}">Open it</a>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if worklist.total > worklist.top|length %}
+<p class="t-micro t-mute">
+  {{ worklist.total - worklist.top|length }} further open item(s). Five is what
+  a small team can hold in their heads at once, so the rest are on
+  <a href="{{ base }}/remediation">Remediation</a> and
+  <a href="{{ base }}/review">Evidence</a>.
+</p>
+{% endif %}
+{% endif %}
+
+{% if not certified_count %}
+  <div class="nextstep">
+    <div>
+      <div class="t-caps t-mute">What to do next</div>
+      <p class="nextstep-t">
+        Nothing has been certified yet, so there is nothing to measure this firm
+        against. A duty is only owed once a person has signed the rule.
+        {{ total_rules }} rules are compiled and waiting.
+      </p>
+    </div>
+    <a class="btn btn-solid" href="{{ base }}/queue">Start certifying</a>
+  </div>
+{% elif not assessed %}
+  {# Three states, and only the third carries a verdict.
+
+     This branch used to cover one of them. The other, evidence uploaded but
+     never assessed, fell through to the dashboard, which ran the engine and
+     printed a compliance percentage beside the firm's name while the history
+     said the firm had never been assessed. Both sentences were on the same
+     page. Being able to compute a number is not the same event as somebody
+     deciding to record one. #}
+  {% if not evidence_imported %}
+  <div class="nextstep nextstep-lead">
+    <div>
+      <div class="t-caps t-mute">Assessment not available</div>
+      <p class="nextstep-t">
+        {{ certified_count }} certified SEBI requirements are ready to test this
+        firm against. Upload your compliance evidence first; nothing can be
+        assessed until there is something to assess.
+      </p>
+      <p class="t-small t-mute">
+        Reports, filing registers, dispatch logs, acknowledgements or
+        certificates. PDF, CSV, XLSX and JSON are all read. Nothing is scored
+        until you provide something real, because a percentage produced from
+        made-up records is worse than no percentage at all.
+      </p>
+    </div>
+    <a class="btn btn-solid btn-lg" href="{{ base }}/review">Upload compliance evidence</a>
+  </div>
+  {% else %}
+  <div class="nextstep nextstep-lead">
+    <div>
+      <div class="t-caps t-mute">
+        {% if stale %}Assessment needs to be re-run{% else %}Evidence ready for assessment{% endif %}
+      </div>
+      <p class="nextstep-t">
+        {% if stale %}
+          {{ company.name }} was assessed on {{ stale.ran_at.strftime('%d %B %Y') }},
+          run {{ stale.short_id }}, but the records or the rulebook have changed
+          since. That run is history rather than this firm's current position,
+          so no percentage is shown for it here.
+        {% else %}
+          Your records are in, and Sanhita has not yet created an assessment of
+          record against them. Nothing on this screen is a compliance verdict
+          until one exists.
+        {% endif %}
+      </p>
+      <p class="t-small t-mute">
+        An assessment is an act with a record: it stores the hash of the
+        rulebook and the hash of the records it ran against, so it can be
+        reproduced and pointed at later.
+      </p>
+    </div>
+    <a class="btn btn-solid btn-lg" href="{{ base }}/gaps">Run compliance assessment</a>
+  </div>
+
+  {# Evidence state, plainly labelled as evidence state. These are counts of
+     what the firm has provided, not a verdict on any of it. #}
+  <div class="gapbar">
+    <div class="gapstat">
+      <div class="gapstat-n">{{ review.total }}</div>
+      <div class="t-caps t-mute">Records read</div>
+      <div class="t-micro t-mute">From your uploaded documents</div>
+    </div>
+    <div class="gapstat {{ 'gapstat-bad' if review.awaiting else '' }}">
+      <div class="gapstat-n">{{ review.awaiting }}</div>
+      <div class="t-caps t-mute">Awaiting your decision</div>
+      <div class="t-micro t-mute">
+        {% if review.awaiting %}<a href="{{ base }}/review">Confirm these first</a>
+        {% else %}Nothing waiting on you{% endif %}
+      </div>
+    </div>
+    <div class="gapstat">
+      <div class="gapstat-n">{{ review.mapped }}</div>
+      <div class="t-caps t-mute">Mapped to a requirement</div>
+      <div class="t-micro t-mute">These are what an assessment would run against</div>
+    </div>
+    <div class="gapstat">
+      <div class="gapstat-n">{{ certified_count }}</div>
+      <div class="t-caps t-mute">Certified requirements</div>
+      <div class="t-micro t-mute">In {{ framework }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# What happens after the upload, stated before it. Somebody arriving at an
+     empty product should be able to see the whole path from here rather than
+     discovering it one screen at a time. These are the six stages in the
+     masthead, written out. #}
+  <ol class="whatnext">
+    <li><span class="whatnext-n">1</span>
+      <span><strong>Read your documents.</strong> Dates, references and artifact
+      types are pulled out of whatever you upload.</span></li>
+    <li><span class="whatnext-n">2</span>
+      <span><strong>You confirm what they show.</strong> A margin report does not
+      carry a rule id, so a person maps each record to the requirement it
+      satisfies. Nothing reaches the engine before you do.</span></li>
+    <li><span class="whatnext-n">3</span>
+      <span><strong>Run the certified rules.</strong> All {{ certified_count }}
+      of them, deterministically, with no model involved.</span></li>
+    <li><span class="whatnext-n">4</span>
+      <span><strong>Show you the gaps.</strong> Each one cites its SEBI clause,
+      its page, and the person who signed the rule.</span></li>
+    <li><span class="whatnext-n">5</span>
+      <span><strong>Track the fix.</strong> Owner, deadline, corrected evidence,
+      and the rule run again. There is no button that marks a gap fixed.</span></li>
+    <li><span class="whatnext-n">6</span>
+      <span><strong>Leave a record.</strong> Every step of it hash chained, so an
+      inspector can follow the whole thing back to the circular.</span></li>
+  </ol>
+
+  <div class="gapbar">
+    <div class="gapstat">
+      <div class="gapstat-n">{{ certified_count }}</div>
+      <div class="t-caps t-mute">Certified requirements</div>
+      <div class="t-micro t-mute">Ready to test against</div>
+    </div>
+    <div class="gapstat {{ 'gapstat-bad' if review.awaiting else '' }}">
+      <div class="gapstat-n">{{ review.awaiting }}</div>
+      <div class="t-caps t-mute">Evidence awaiting review</div>
+      <div class="t-micro t-mute">
+        {% if review.awaiting %}<a href="{{ base }}/review">Confirm these to run</a>
+        {% else %}Nothing uploaded yet{% endif %}
+      </div>
+    </div>
+    <div class="gapstat">
+      <div class="gapstat-n">{{ upcoming }}</div>
+      <div class="t-caps t-mute">Falling due in 30 days</div>
+      <div class="t-micro t-mute"><a href="{{ base }}/forecast">See the forecast</a></div>
+    </div>
+    <div class="gapstat">
+      <div class="gapstat-n">{{ control_coverage.mapped }}</div>
+      <div class="t-caps t-mute">Duties with an owner</div>
+      <div class="t-micro t-mute"><a href="{{ base }}/processes">See the chain</a></div>
+    </div>
+  </div>
+{% else %}
+
+<div class="gapbar">
+  <div class="gapstat">
+    <div class="gapstat-n">{{ applicable }}</div>
+    <div class="t-caps t-mute">Applicable duties</div>
+    <div class="t-micro t-mute">Of {{ certified_count }} signed rules</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ compliant }}</div>
+    <div class="t-caps t-mute">Met</div>
+    <div class="t-micro t-mute">No finding against them in this run</div>
+  </div>
+  <div class="gapstat {{ 'gapstat-bad' if failing else '' }}">
+    <div class="gapstat-n">{{ failing }}</div>
+    <div class="t-caps t-mute">Confirmed gaps</div>
+    <div class="t-micro t-mute">
+      The records prove these{% if high_risk %}, {{ high_risk }} high severity{% endif %}
+    </div>
+  </div>
+  {# Beside the confirmed gaps and never inside them. A duty with no record is
+     very often one discharged on paper nobody uploaded. #}
+  <div class="gapstat">
+    <div class="gapstat-n">{{ unverified }}</div>
+    <div class="t-caps t-mute">Not verifiable</div>
+    <div class="t-micro t-mute">No record either way, so not a finding</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ undetermined }}</div>
+    <div class="t-caps t-mute">Need a person</div>
+    <div class="t-micro t-mute">
+      Applicability turns on a fact about your business
+    </div>
+  </div>
+</div>
+
+<div class="gapbar">
+  <div class="gapstat {{ 'gapstat-bad' if review.awaiting else '' }}">
+    <div class="gapstat-n">{{ review.awaiting }}</div>
+    <div class="t-caps t-mute">Evidence awaiting review</div>
+    <div class="t-micro t-mute">
+      <a href="{{ base }}/review">Uploaded, not yet counted</a>
+    </div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ upcoming }}</div>
+    <div class="t-caps t-mute">Falling due in 30 days</div>
+    <div class="t-micro t-mute"><a href="{{ base }}/forecast">See the forecast</a></div>
+  </div>
+  <div class="gapstat {{ 'gapstat-bad' if remediation.overdue else '' }}">
+    <div class="gapstat-n">{{ remediation.open }}</div>
+    <div class="t-caps t-mute">Open remediation</div>
+    <div class="t-micro t-mute">
+      {{ remediation.overdue }} overdue &middot;
+      <a href="{{ base }}/remediation">Open the list</a>
+    </div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ control_coverage.mapped }}</div>
+    <div class="t-caps t-mute">Duties with an owner</div>
+    <div class="t-micro t-mute">
+      Mapped to a process and a control &middot;
+      <a href="{{ base }}/processes">See the chain</a>
+    </div>
+  </div>
+</div>
+
+<div class="caveats">
+  <div class="t-caps t-mute">What these figures were computed from</div>
+  <p class="t-small">
+    <strong>{{ evidence_label }}</strong>. Every number above comes from running
+    the certified rules against that evidence just now. Nothing is stored, so
+    this page cannot drift away from what the engine actually returns.
+  </p>
+</div>
+
+{% if last_run %}
+{# The run itself, written down. The counts here are a record of what happened,
+   not the source of anything above, so the two can be compared. #}
+<section class="runrec">
+  <div class="runrec-head">
+    <div>
+      <div class="t-caps t-mute">Assessment record</div>
+      <h2 class="t-subhead">
+        Run {{ last_run.short_id }}, {{ last_run.ran_at.strftime('%d %B %Y at %H:%M') }} UTC
+      </h2>
+    </div>
+    {% if movement %}
+    <div class="runrec-move {{ 'is-good' if movement[0] < movement[1] else ('is-bad' if movement[0] > movement[1] else '') }}">
+      {% if movement[0] < movement[1] %}
+        {{ movement[1] - movement[0] }} fewer breaches than last time
+      {% elif movement[0] > movement[1] %}
+        {{ movement[0] - movement[1] }} more breaches than last time
+      {% else %}
+        No change in breaches since last time
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <p class="t-small t-mute runrec-p">
+    This run is reproducible. It records the hash of the rulebook it applied and
+    the hash of the records it applied them to, so anyone can put the same two
+    inputs into the same engine and check that they get these counts back.
+  </p>
+
+  <div class="runrec-grid">
+    <div><span class="t-caps t-mute">Rulebook</span>
+      <span class="t-mono t-small">{{ last_run.rulebook_sha256[:16] }}</span></div>
+    <div><span class="t-caps t-mute">Evidence</span>
+      <span class="t-mono t-small">{{ last_run.evidence_sha256[:16] }}</span></div>
+    <div><span class="t-caps t-mute">Rules run</span>
+      <span class="t-small">{{ last_run.rules_evaluated }} of {{ last_run.rules_certified }} certified</span></div>
+    <div><span class="t-caps t-mute">Occasions checked</span>
+      <span class="t-small">{{ last_run.events_checked }}</span></div>
+    <div><span class="t-caps t-mute">Never filed</span>
+      <span class="t-small">{{ last_run.missing }}</span></div>
+    <div><span class="t-caps t-mute">Filed late</span>
+      <span class="t-small">{{ last_run.late }}</span></div>
+    <div><span class="t-caps t-mute">No evidence at all</span>
+      <span class="t-small">{{ last_run.no_evidence }}</span></div>
+    <div><span class="t-caps t-mute">Needs a person</span>
+      <span class="t-small">{{ last_run.undetermined }}</span></div>
+  </div>
+
+  {# What this run actually said, kept rather than recomputed. An inspector
+     asks "what were you told in March and did you act on it", and today's
+     engine cannot answer that: the rulebook may have been amended and the
+     evidence corrected since. #}
+  {% if last_run.has_findings %}
+  <details class="runrec-hist">
+    <summary class="t-small">
+      What this run said, all {{ last_run.findings|length }} finding(s), as they stood
+    </summary>
+    <div class="tblwrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Clause</th><th>Outcome</th><th>Occasion</th><th>Due</th>
+            <th>Filed</th><th>Signed by</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in last_run.findings[:40] %}
+          <tr>
+            <td><a href="{{ base }}/clause/{{ f.clause_id }}">{{ f.clause_id }}</a></td>
+            <td>{{ f.outcome.replace('_', ' ')|lower }}</td>
+            <td>{{ f.occurred_on }}</td>
+            <td>{{ f.due_on }}</td>
+            <td>
+              {% if f.filed_on %}{{ f.filed_on }}{% if f.days_late %} ({{ f.days_late }}d late){% endif %}
+              {% else %}not filed{% endif %}
+            </td>
+            <td>{{ f.certified_by }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if last_run.findings|length > 40 %}
+      <p class="t-micro t-mute">
+        The first 40 of {{ last_run.findings|length }}, worst first. The full set
+        is in the stored run.
+      </p>
+    {% endif %}
+    <p class="t-micro t-mute">
+      Copied at the moment of the run, signature and all, so a rule amended
+      later cannot rewrite what this firm was told at the time.
+    </p>
+  </details>
+  {% endif %}
+
+  {% if run_count > 1 %}
+  <details class="runrec-hist">
+    <summary class="t-small">{{ run_count }} assessments recorded for this firm</summary>
+    <div class="tblwrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>When</th><th>By</th><th>Breaches</th><th>Met</th>
+            <th>Evidence</th><th>Findings kept</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in history %}
+          <tr>
+            <td>{{ run.ran_at.strftime('%d %b %Y %H:%M') }}</td>
+            <td>{{ run.ran_by }}</td>
+            <td>{{ run.breaches }}</td>
+            <td>{{ run.satisfied }}</td>
+            <td class="t-mono">{{ run.evidence_sha256[:10] }}</td>
+            <td>
+              {% if run.has_findings %}{{ run.findings|length }}
+              {% else %}counts only{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="t-micro t-mute">
+      A new row appears when the rulebook changes or the records change. Opening
+      this page again does not add one.
+    </p>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if failing %}
+<div class="nextstep nextstep-lead">
+  <div>
+    <div class="t-caps t-mute">What to do next</div>
+    <p class="nextstep-t">
+      {{ failing }} requirement(s) have a confirmed gap, {{ high_risk }} of them high
+      severity. Each one names the SEBI clause behind it and the person who
+      signed that rule.
+    </p>
+  </div>
+  <a class="btn btn-solid btn-lg" href="{{ base }}/gaps">Open the gaps</a>
+</div>
+{% elif review.awaiting %}
+<div class="nextstep">
+  <div>
+    <div class="t-caps t-mute">What to do next</div>
+    <p class="nextstep-t">
+      Nothing is failing, and {{ review.awaiting }} uploaded item(s) are still
+      waiting for you to confirm which requirement they satisfy.
+    </p>
+  </div>
+  <a class="btn btn-solid" href="{{ base }}/review">Review evidence</a>
+</div>
+{% else %}
+<div class="nextstep">
+  <div>
+    <div class="t-caps t-mute">What to do next</div>
+    <p class="nextstep-t">
+      Nothing is failing against the evidence provided. The audit trail shows
+      every rule, every result and who signed what.
+    </p>
+  </div>
+  <a class="btn" href="{{ base }}/audit">Open the audit trail</a>
+</div>
+{% endif %}
+
+{# One recommendation above, and the rest of the path here. A row of equally
+   weighted buttons makes somebody choose before they know enough to choose;
+   a recommendation plus its alternatives does not strand the person who wants
+   something else. Counts come from the same run as everything above. #}
+<div class="orelse">
+  <span class="t-caps t-mute">Or go straight to</span>
+  <a href="{{ base }}/review">
+    Evidence
+    <span class="t-mute">{{ review.awaiting }} awaiting your decision</span>
+  </a>
+  <a href="{{ base }}/gaps">
+    Compliance
+    <span class="t-mute">{{ failing }} confirmed of {{ applicable }} applicable</span>
+  </a>
+  <a href="{{ base }}/remediation">
+    Remediation
+    <span class="t-mute">{{ remediation.open }} open, {{ remediation.overdue }} overdue</span>
+  </a>
+  <a href="{{ base }}/audit">
+    Audit
+    <span class="t-mute">Every decision, hash chained</span>
+  </a>
+</div>
+
+{% if worst %}
+<div class="section-rule"><span class="t-caps t-mute">Worst first</span></div>
+<table class="grid">
+  <colgroup>
+    <col style="width:14%"><col style="width:14%"><col style="width:14%"><col style="width:58%">
+  </colgroup>
+  <thead><tr><th>Clause</th><th>Outcome</th><th>Due</th><th>What was required</th></tr></thead>
+  <tbody>
+    {% for f in worst %}
+    <tr>
+      <td><a class="t-mono" href="{{ base }}/clause/{{ f.clause_id }}">{{ f.clause_id }}</a></td>
+      <td>
+        <span class="status status-rejected">
+          {{ f.outcome.value.replace('_',' ')|lower }}
+        </span>
+      </td>
+      <td class="t-small">{{ f.due_on.strftime('%d %b %Y') }}</td>
+      <td class="t-small">{{ f.requirement[:80] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="t-small t-mute" style="margin-top:var(--s-3)">
+  <a href="{{ base }}/gaps">Every finding, with the clause and the signature behind it</a>.
+</p>
+{% endif %}
+
+{% if open_tasks %}
+<div class="section-rule"><span class="t-caps t-mute">Being fixed</span></div>
+<table class="grid">
+  <colgroup><col style="width:16%"><col style="width:14%"><col style="width:20%"><col style="width:16%"><col style="width:34%"></colgroup>
+  <thead><tr><th>Task</th><th>Clause</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for t in open_tasks %}
+    <tr>
+      <td><a class="t-mono t-small" href="{{ base }}/remediation#{{ t.task_id }}">{{ t.task_id }}</a></td>
+      <td class="t-mono t-small">{{ t.clause_id }}</td>
+      <td class="t-small">{{ t.owner or 'nobody yet' }}</td>
+      <td class="t-small">
+        {{ t.due_date.strftime('%d %b') if t.due_date else 'not set' }}
+        {% if t.is_overdue() %}<span class="badge badge-bad">overdue</span>{% endif %}
+      </td>
+      <td class="t-small">{{ t.status.value.replace('_',' ')|lower }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+
+{% endif %}
+
+{# The profile, editable once setting up is over. During setup it is either
+   the whole screen (step one) or none of it, because being asked which
+   rulebooks apply is not a reason to re-edit the firm underneath. #}
+{% if company and not setup_step %}
+<div class="section-rule">
+  <span class="t-caps t-mute">This firm</span>
+</div>
+
+{{ company_form(company, intermediaries, base) }}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if setup_step == 3 %}
+{% include "_evidence_dropzone_js.html" %}
+{% endif %}
+{% endblock %}

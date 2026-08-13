@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - One Gap, End to End{% endblock %}
+
+{% block content %}
+{# One gap, whole, on one page.
+   Every link here already existed and every one lived on a different screen,
+   so proving a closure meant navigating four of them with the ids held in your
+   head. This is the same data, read from the store that owns each part, laid
+   out in the order it happened. #}
+<div class="page-head">
+  <div class="t-caps t-mute">
+    <a href="{{ base }}/remediation">Remediation</a> &middot; {{ task.task_id }}
+  </div>
+  <h1 class="t-title">{{ task.title }}</h1>
+  <p class="t-mute">
+    From the SEBI clause to the moment this closed, in the order it happened.
+    Nothing on this page is recomputed for display; each step is read from the
+    record that was written when it took place.
+  </p>
+</div>
+
+<ol class="chain">
+
+  <li class="chain-step">
+    <div class="chain-mark">1</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">The regulation</div>
+      <h2 class="t-subhead">Clause {{ task.clause_id }}</h2>
+      {% if clause %}
+        <blockquote class="cite-verbatim">{{ clause.text[:600] }}{% if clause.text|length > 600 %}…{% endif %}</blockquote>
+        <p class="t-micro t-mute">
+          Page {{ clause.page }} of {{ workspace.source_name }}.
+          <a href="{{ base }}/clause/{{ task.clause_id }}">Open the clause</a>
+        </p>
+      {% else %}
+        <p class="t-small t-mute">
+          This clause is not in the document currently loaded, which happens
+          when a task was raised against a different edition.
+        </p>
+      {% endif %}
+    </div>
+  </li>
+
+  <li class="chain-step">
+    <div class="chain-mark">2</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">The certified rule</div>
+      {% if obligation %}
+        <h2 class="t-subhead">{{ obligation.action.verb }} {{ obligation.action.object }}</h2>
+        <div class="chain-facts t-small">
+          <span><span class="t-caps t-mute">Rule</span> <span class="t-mono">{{ obligation.id }}</span></span>
+          {# Some clauses name no actor beyond the intermediary the circular is
+             addressed to. An empty label beside a caption reads as a bug. #}
+          {% if obligation.actor and obligation.actor.role %}
+            <span><span class="t-caps t-mute">Actor</span> {{ obligation.actor.role }}</span>
+          {% endif %}
+          {% if obligation.deadline %}
+            {% set d = obligation.deadline %}
+            <span><span class="t-caps t-mute">Deadline</span>
+              {{ d.kind.value.replace('_', ' ')|lower }}
+              {%- if d.period %}, each {{ d.period|lower }}{% endif %}
+              {%- if d.offset_days is not none %},
+                within {{ d.offset_days }} day{{ '' if d.offset_days == 1 else 's' }}
+              {%- elif d.offset_hours is not none %},
+                within {{ d.offset_hours }} hour{{ '' if d.offset_hours == 1 else 's' }}
+              {%- elif d.offset_months is not none %},
+                within {{ d.offset_months }} month{{ '' if d.offset_months == 1 else 's' }}
+              {%- endif %}
+            </span>
+          {% endif %}
+          {% if obligation.evidence %}
+            <span><span class="t-caps t-mute">Proof required</span>
+              {{ obligation.evidence[0].artifact_type }}</span>
+          {% endif %}
+        </div>
+        {% if obligation.certification %}
+        <p class="t-micro t-mute">
+          Certified by <strong>{{ obligation.certification.certified_by }}</strong>{% if obligation.certification.certified_by == 'Sanhita Demo Officer' %}, in the Sanhita demonstration environment rather than by a real officer at a real firm{% endif %}
+          on {{ obligation.certification.certified_at.strftime('%d %b %Y') }}.
+        </p>
+        <div class="t-code sigline">signature {{ obligation.certification.signature }}</div>
+        {% endif %}
+      {% else %}
+        <p class="t-small t-mute">
+          Rule {{ task.obligation_id }} is no longer current in this rulebook.
+          The task keeps the version it was raised against.
+        </p>
+      {% endif %}
+    </div>
+  </li>
+
+  {% if binding %}
+  <li class="chain-step">
+    <div class="chain-mark">3</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">Who does it, and with what</div>
+      <p class="t-small">{{ binding.describe() }}</p>
+      <p class="t-micro t-mute">
+        <a href="{{ base }}/processes">See the whole chain of controls</a>
+      </p>
+    </div>
+  </li>
+  {% endif %}
+
+  <li class="chain-step">
+    <div class="chain-mark">{{ '4' if binding else '3' }}</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">What the firm's records said</div>
+      {% if trigger %}
+        <h2 class="t-subhead">{{ trigger.artifact_type }} due {{ trigger.occurred_on.strftime('%d %b %Y') }}</h2>
+        <div class="chain-facts t-small">
+          <span><span class="t-caps t-mute">Occasion</span> <span class="t-mono">{{ trigger.id }}</span></span>
+          <span><span class="t-caps t-mute">Filed</span>
+            {% if trigger.filed_on %}{{ trigger.filed_on.strftime('%d %b %Y') }}
+            {% else %}never{% endif %}</span>
+          {% if trigger.where() %}
+            <span><span class="t-caps t-mute">From</span> {{ trigger.where() }}</span>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="t-small">
+          No record of any kind was filed against this duty, which is why the
+          engine reported it. The gap was raised as
+          <span class="t-mono">{{ task.gap_id }}</span>.
+        </p>
+      {% endif %}
+    </div>
+  </li>
+
+  <li class="chain-step">
+    <div class="chain-mark">{{ '5' if binding else '4' }}</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">The assessment that found it</div>
+      {% if found_in %}
+        <h2 class="t-subhead">Run {{ found_in.short_id }}</h2>
+        <div class="chain-facts t-small">
+          <span><span class="t-caps t-mute">Taken</span>
+            {{ found_in.ran_at.strftime('%d %b %Y, %H:%M') }} UTC</span>
+          <span><span class="t-caps t-mute">By</span> {{ found_in.ran_by }}</span>
+          <span><span class="t-caps t-mute">Confirmed gaps</span> {{ found_in.breaches }}</span>
+          {% if found_in.no_evidence %}
+          <span><span class="t-caps t-mute">Unverifiable</span> {{ found_in.no_evidence }}</span>
+          {% endif %}
+        </div>
+        <p class="t-micro t-mute t-mono">
+          rulebook {{ found_in.rulebook_sha256[:16] }} &middot;
+          evidence {{ found_in.evidence_sha256[:16] }}
+        </p>
+      {% else %}
+        <p class="t-small t-mute">
+          No recorded assessment names this rule. The task was raised from a
+          preview rather than from an assessment of record, which the
+          <a href="{{ base }}/gaps">assessment screen</a> now asks you to take
+          before acting on what it shows.
+        </p>
+      {% endif %}
+    </div>
+  </li>
+
+  <li class="chain-step">
+    <div class="chain-mark">{{ '6' if binding else '5' }}</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">The work</div>
+      <h2 class="t-subhead">
+        {{ task.owner or 'nobody yet' }}
+        <span class="status {{ 'status-certified' if task.status.value == 'CLOSED' else 'status-proposed' }}">
+          {{ task.status.value.replace('_', ' ')|lower }}
+        </span>
+      </h2>
+      <div class="chain-facts t-small">
+        {% if task.assigned_team %}
+          <span><span class="t-caps t-mute">Team</span> {{ task.assigned_team }}</span>
+        {% endif %}
+        {% if task.due_date %}
+          <span><span class="t-caps t-mute">Due</span> {{ task.due_date.strftime('%d %b %Y') }}</span>
+        {% endif %}
+        <span><span class="t-caps t-mute">Priority</span> {{ task.priority.value|lower }}</span>
+      </div>
+      {% if task.remediation_action %}
+        <p class="t-small t-mute">{{ task.remediation_action }}</p>
+      {% endif %}
+    </div>
+  </li>
+
+  <li class="chain-step">
+    <div class="chain-mark">{{ '7' if binding else '6' }}</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">The corrective evidence</div>
+      {% if attached %}
+        <ul class="remtask-evlist">
+          {% for e in attached %}
+          <li>
+            <span class="t-mono t-micro">{{ e.id }}</span>
+            <span class="t-small">{{ e.artifact_type }}</span>
+            <span class="t-small t-mute">
+              occurred {{ e.occurred_on.strftime('%d %b %Y') }}{% if e.filed_on %}, filed {{ e.filed_on.strftime('%d %b %Y') }}{% else %}, not filed{% endif %}
+            </span>
+            {% if e.where() %}
+              <span class="t-micro t-mute">from {{ e.where() }}</span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="t-small t-mute">
+          Nothing has been attached yet, so this task cannot be re-checked.
+          The record that fixes a gap has to be named, not merely present
+          somewhere in the firm's files.
+        </p>
+      {% endif %}
+    </div>
+  </li>
+
+  <li class="chain-step">
+    <div class="chain-mark">{{ '8' if binding else '7' }}</div>
+    <div class="chain-body">
+      <div class="t-caps t-mute">The verdict</div>
+      {% if task.status.value == 'CLOSED' %}
+        <h2 class="t-subhead">Closed</h2>
+        <p class="t-small">
+          Verified by <strong>{{ task.verified_by }}</strong> on
+          {{ task.verified_at.strftime('%d %b %Y, %H:%M') }} UTC, because the
+          same certified rule was run again and returned no finding. Nobody
+          declared this fixed; the engine did.
+        </p>
+        {% if cleared_in %}
+          <p class="t-micro t-mute">
+            First assessment that no longer names this rule: run
+            {{ cleared_in.short_id }},
+            {{ cleared_in.ran_at.strftime('%d %b %Y, %H:%M') }} UTC.
+          </p>
+        {% endif %}
+      {% else %}
+        <h2 class="t-subhead">{{ task.status.value.replace('_', ' ')|lower }}</h2>
+        <p class="t-small t-mute">
+          {% if task.last_recheck_result %}
+            Last re-check: {{ task.last_recheck_result }}
+          {% else %}
+            The rule has not been run again yet, so this is still open.
+          {% endif %}
+        </p>
+      {% endif %}
+    </div>
+  </li>
+</ol>
+
+<div class="section-rule">
+  <span class="t-caps t-mute">Every step of it, in the order it was written</span>
+</div>
+
+<div class="caveats {{ 'caveats-bad' if not chain_ok[0] }}">
+  <div class="t-caps t-mute">
+    {% if chain_ok[0] %}This history is hash chained and verifies
+    {% else %}This history does not verify{% endif %}
+  </div>
+  <p class="t-small">
+    {% if chain_ok[0] %}
+      Every entry carries the hash of the one before it, so removing or editing
+      any of them breaks the chain for all the rest.
+    {% else %}
+      {{ chain_ok[1] }}
+    {% endif %}
+  </p>
+</div>
+
+<div class="tblwrap">
+  <table class="grid">
+    <thead>
+      <tr><th>When</th><th>What</th><th>Who</th><th>From</th><th>To</th><th>Note</th></tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.at.strftime('%d %b %Y %H:%M') }}</td>
+        <td>{{ e.transition.value.replace('_', ' ')|lower }}</td>
+        <td>{{ e.actor }}</td>
+        <td>{{ e.from_status or '' }}</td>
+        <td>{{ e.to_status or '' }}</td>
+        <td class="t-small">{{ e.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

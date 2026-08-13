@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en" data-surface="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Sanhita{% endblock %}</title>
+<!-- Served from disk, never a CDN. Preloaded so the workbench does not flash
+     a fallback face on the way in, the same as the landing page. -->
+<link rel="preload" href="/ui/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/ui/fonts/InterDisplay-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ui/tokens.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/app.css?v={{ asset_v }}">
+</head>
+<body>
+
+<!-- The masthead carries up to eight links. Without this, a keyboard or screen
+     reader user tabs through all of them on every single page before reaching
+     the rule they came to read. -->
+<a class="skip" href="#main">Skip to the main content</a>
+
+{# The masthead and the journey row stick as one block. Two sticky elements
+   would need the second to know the first's height, which changes with the
+   font and the window, so they share a single sticky parent instead. #}
+<div class="topbar">
+<header class="masthead">
+  <a class="brand" href="/">
+    {% with size = 26 %}{% include "_logo.html" %}{% endwith %}
+    <span class="brand-mark">Sanhita</span>
+    {# Named for the person who arrives, not for the machinery behind it.
+       "Certification Workbench" describes the regulatory analyst's job of
+       signing rules, which happens before any firm is measured and which a
+       compliance officer never does. It still names that work, inside the
+       Advanced menu where that work lives. #}
+    <span class="brand-sub t-caps">SEBI Compliance</span>
+  </a>
+
+  {# What this screen is about, named for the person reading it.
+
+     On a firm's own screens the subject is the firm, and the rulebook is what
+     it is being measured against. On the regulatory screens the subject really
+     is the document. The masthead said DOCUMENT on both, so the compliance
+     officer's first impression of their own compliance page was that they had
+     opened a circular.
+
+     The switcher is unchanged and still switches rulebooks. Only what it calls
+     itself changes, and only on the firm's side. #}
+  {% if workspace and company_context and firm %}
+  <div class="firmpick">
+    <span class="firmpick-label t-caps t-mute">Firm</span>
+    <a class="firmpick-name" href="{{ base }}/company">{{ firm.name }}</a>
+  </div>
+  {% endif %}
+
+  {% if workspace %}
+  <div class="docpick {{ 'docpick-second' if company_context and firm }}">
+    <details class="docpick-d">
+      <summary>
+        <span class="docpick-label t-caps t-mute">
+          {{ 'Framework' if company_context else 'Document' }}
+        </span>
+        <span class="docpick-name">{{ workspace.name }}</span>
+      </summary>
+      <div class="docpick-menu">
+        {% for d in documents %}
+        <a class="docpick-item {{ 'is-current' if d.id == wid }}" href="/w/{{ d.id }}">
+          <span class="docpick-item-n">{{ d.name }}</span>
+          <span class="t-micro t-mute">{{ 'worked example' if d.builtin else d.source_name }}</span>
+        </a>
+        {% endfor %}
+        <a class="docpick-add" href="/documents">Bring your own circular</a>
+      </div>
+    </details>
+  </div>
+  {% endif %}
+
+  {# The navigation is the lifecycle, in order, and nothing else.
+
+     It used to be three grouped menus of twelve screens, organised by what
+     each screen was rather than by when somebody needs it. That is a menu
+     built from the codebase's shape. A compliance officer arriving at it had
+     to decide which of twelve tools answered their question before they could
+     ask it, and the honest answer for most of them was "none of these, yet".
+
+     So the six stages of the firm's journey are flat, numbered and always
+     visible, in the order they happen. Everything else moved behind Advanced:
+     it is either the regulatory analyst's work rather than the firm's, or a
+     cross-rulebook study rather than a step. Nothing was removed, and every
+     screen keeps its URL.
+
+     Certification is deliberately not a stage. Somebody signs the rulebook
+     before a firm is ever measured against it, and a firm being assessed does
+     not need to know that screen exists to read its own result. #}
+  {% set advanced = ['document', 'queue', 'coverage', 'conflicts', 'divergence',
+                     'load', 'forecast', 'simulate', 'processes', 'documents',
+                     'supervisor', 'facts'] %}
+
+  <nav class="nav nav-secondary" aria-label="Everything else">
+    {# One menu for everything that is not a stage of the firm's journey. A
+       judge can still reach all of it; a compliance officer never has to. #}
+    <details class="navgroup {{ 'is-current' if nav in advanced }}">
+      <summary class="nav-link {{ 'is-current' if nav in advanced }}" {{ 'aria-current=page'|safe if nav in advanced }}>
+        Advanced
+        <span class="navgroup-caret" aria-hidden="true"></span>
+      </summary>
+      <div class="navgroup-menu navgroup-menu-wide">
+        <div class="navgroup-head t-caps t-mute">Regulation</div>
+        <a class="navgroup-item {{ 'is-current' if nav == 'documents' }}" href="/documents">
+          <span class="navgroup-item-n">SEBI rulebooks</span>
+          <span class="t-micro t-mute">Every circular on this machine, and a way to add one</span>
+        </a>
+        {% if workspace %}
+        <a class="navgroup-item {{ 'is-current' if nav == 'document' }}" href="{{ base }}">
+          <span class="navgroup-item-n">The circular</span>
+          <span class="t-micro t-mute">What was read, and what could not be</span>
+        </a>
+        <a class="navgroup-item {{ 'is-current' if nav == 'queue' }}" href="{{ base }}/queue">
+          <span class="navgroup-item-n">Requirements to approve</span>
+          <span class="t-micro t-mute">Sign a rule before it can be used</span>
+        </a>
+        <a class="navgroup-item {{ 'is-current' if nav == 'coverage' }}" href="{{ base }}/coverage">
+          <span class="navgroup-item-n">How much is approved</span>
+          <span class="t-micro t-mute">Compiled, certified and mapped to evidence</span>
+        </a>
+
+        <div class="navgroup-head t-caps t-mute">Operational analysis</div>
+        <a class="navgroup-item {{ 'is-current' if nav == 'processes' }}" href="{{ base }}/processes">
+          <span class="navgroup-item-n">Processes and controls</span>
+          <span class="t-micro t-mute">Clause to process to team to system to control</span>
+        </a>
+        <a class="navgroup-item {{ 'is-current' if nav == 'forecast' }}" href="{{ base }}/forecast">
+          <span class="navgroup-item-n">Forecast</span>
+          <span class="t-micro t-mute">What is about to fall due</span>
+        </a>
+        <a class="navgroup-item {{ 'is-current' if nav == 'simulate' }}" href="{{ base }}/simulate">
+          <span class="navgroup-item-n">Impact assessment</span>
+          <span class="t-micro t-mute">What a draft amendment would cost</span>
+        </a>
+        <a class="navgroup-item {{ 'is-current' if nav == 'conflicts' }}" href="{{ base }}/conflicts">
+          <span class="navgroup-item-n">Contradictions</span>
+          <span class="t-micro t-mute">Where the circular disagrees with itself</span>
+        </a>
+        <a class="navgroup-item {{ 'is-current' if nav == 'divergence' }}" href="{{ base }}/divergence">
+          <span class="navgroup-item-n">Divergence</span>
+          <span class="t-micro t-mute">Where a clause is likely to be read two ways</span>
+        </a>
+        <a class="navgroup-item {{ 'is-current' if nav == 'load' }}" href="{{ base }}/load">
+          <span class="navgroup-item-n">Regulatory load</span>
+          <span class="t-micro t-mute">What the circular asks of a firm, per year</span>
+        </a>
+        {% endif %}
+
+        <div class="navgroup-head t-caps t-mute">Supervision</div>
+        <a class="navgroup-item {{ 'is-current' if nav == 'supervisor' }}" href="/supervisor">
+          <span class="navgroup-item-n">Supervisor</span>
+          <span class="t-micro t-mute">Every firm recorded here, and what is known about each</span>
+        </a>
+
+        <div class="navgroup-head t-caps t-mute">Trust</div>
+        <a class="navgroup-item {{ 'is-current' if nav == 'facts' }}" href="/facts">
+          <span class="navgroup-item-n">Facts</span>
+          <span class="t-micro t-mute">Every number this product claims, and its source</span>
+        </a>
+      </div>
+    </details>
+  </nav>
+
+  <div class="mast-end">
+
+    {% if user %}
+      {# The full name belongs on the certification, not in the chrome. Here an
+         initial is enough to say who is signed in, and it costs one circle
+         instead of the width of a name plus a link. #}
+      <details class="account">
+        <summary aria-label="Account, signed in as {{ user.name }}">
+          <span class="avatar" aria-hidden="true">{{ user.name|trim|first|upper }}</span>
+        </summary>
+        <div class="account-menu">
+          <div class="account-who">
+            <span class="avatar avatar-lg" aria-hidden="true">{{ user.name|trim|first|upper }}</span>
+            <div class="account-who-t">
+              <div class="account-name">{{ user.name }}</div>
+              <div class="t-micro t-mute">{{ user.email }}</div>
+            </div>
+          </div>
+          <p class="t-micro t-mute account-note">
+            This is the name that will appear against every rule you certify.
+          </p>
+          <form method="post" action="/signout">
+            <button class="btn account-out">Sign out</button>
+          </form>
+        </div>
+      </details>
+    {% elif nav != 'auth' %}
+      <a href="/signin" class="nav-link">Sign in</a>
+    {% endif %}
+  </div>
+</header>
+
+{# The journey gets its own row.
+   It shared the masthead with the brand, the document switcher, the Advanced
+   menu and the account, and six stages plus all of that does not fit on one
+   line at any real width. What a person saw was "Regulatory changes" printed
+   through "Advanced" and "Audit" printed through "Sign in".
+
+   A row of its own also suits it better. This is the spine of the product, so
+   it can be full width, evenly spaced and legible, instead of competing for
+   the last hundred pixels of a crowded bar. #}
+{% if workspace and setup_step %}
+{# Onboarding, and only onboarding.
+
+   The five stages used to render underneath "Step 1 of 3", so somebody arriving
+   was shown two numbered journeys at once and could not say which of them they
+   were on. While a firm is being set up there is one journey and it has three
+   steps. The stages appear when they mean something, which is when there is a
+   firm with a rulebook and somewhere to put its records. #}
+<nav class="stagebar" aria-label="Setup">
+  <ol class="lifecycle">
+    <li><span class="lifestep-mode t-caps t-mute">Setting up</span></li>
+    {% for step, label in [(1, 'Company'), (2, 'Framework'), (3, 'Evidence')] %}
+    <li>
+      <span class="lifestep {{ 'is-current' if step == setup_step }}{{ ' is-done' if step < setup_step }}">
+        <span class="lifestep-n" aria-hidden="true">
+          {%- if step < setup_step %}&#10003;{% else %}{{ step }}{% endif -%}
+        </span>
+        <span class="lifestep-t">{{ label }}</span>
+      </span>
+    </li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}
+
+{% if workspace and not setup_step %}
+{# Five stages, and one thing that is not a stage.
+
+   The problem statement names "two distinct but deeply related compliance
+   challenges". The first is dynamic regulatory translation, what changed and
+   what it means operationally. The second is ongoing compliance management,
+   the loop a firm runs against its own evidence.
+
+   Regulatory changes was numbered stage five of the firm's loop, which merged
+   the two. Nobody finishes remediating a gap and then, as the next step,
+   diffs two editions of a circular: that is a different question asked at a
+   different time, usually because SEBI published something. It keeps its
+   place in the bar, apart from the numbered path. #}
+{% set lifecycle = [
+  ('1', 'company',     '/company',     'Overview',    'Who this firm is and where it stands'),
+  ('2', 'review',      '/review',      'Evidence',    'Upload your records and confirm what they show'),
+  ('3', 'gaps',        '/gaps',        'Assessment',  'Run the certified rules and read the result'),
+  ('4', 'remediation', '/remediation', 'Remediation', 'Who owns each gap, by when, and whether it closed'),
+  ('5', 'audit',       '/audit',       'Audit',       'Every decision, hash chained'),
+] %}
+<nav class="stagebar" aria-label="Sections">
+  {# Which stages this firm has actually got through, so the row is a progress
+     indicator rather than five equal links. Read from what exists on disk, not
+     from a stored step counter that would drift the moment somebody deleted
+     their evidence. #}
+  {% set reached = journey_reached or [] %}
+  <ol class="lifecycle">
+    {% for step, key, path, label, blurb in lifecycle %}
+    <li>
+      <a class="lifestep {{ 'is-current' if nav == key }}{{ ' is-done' if key in reached and nav != key }}"
+         href="{{ base }}{{ path }}"
+         {{ 'aria-current=page'|safe if nav == key }} title="{{ blurb }}">
+        <span class="lifestep-n" aria-hidden="true">
+          {%- if key in reached and nav != key %}&#10003;{% else %}{{ step }}{% endif -%}
+        </span>
+        <span class="lifestep-t">{{ label }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <div class="stagebar-apart">
+    <span class="t-micro t-mute">Separately</span>
+    <a class="lifestep {{ 'is-current' if nav == 'diff' }}" href="{{ base }}/diff"
+       {{ 'aria-current=page'|safe if nav == 'diff' }}
+       title="What a new edition of the circular changed, and what it means here">
+      <span class="lifestep-t">Regulatory changes</span>
+    </a>
+  </div>
+</nav>
+{% endif %}
+</div>
+
+<main class="shell" id="main" tabindex="-1">
+  {% block content %}{% endblock %}
+</main>
+
+<script>window.SANHITA_BASE = {{ (base or '')|tojson }};</script>
+<script src="/static/app.js?v={{ asset_v }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

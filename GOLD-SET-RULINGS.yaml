@@ -1,0 +1,160 @@
+# The seven gold-set rulings. Yours to make, nobody else's.
+#
+# The gold set is 40 clauses labelled by hand, and it is what every accuracy
+# number in this product is measured against. It cannot be signed off by the
+# person who wrote the extractor and it cannot be signed off by me. If the
+# labels bend toward what the machine happens to do, every score built on them
+# is circular reasoning with extra steps.
+#
+# Seven clauses are where the hand label and the machine disagree. The full
+# reasoning for each, with the clause text and my reading, is in
+# GOLD-SET-REVIEW.md. This file is the same seven decisions in a form you can
+# answer in one pass.
+#
+# HOW TO ANSWER
+#   Set `ruling` on each of the seven to one of the values listed under
+#   `options` for that clause. Delete nothing else. Add a `note` if you want the
+#   reason recorded; it is written into the evaluation output.
+#
+# WHEN YOU HAVE
+#   Tell me, and I will run `sanhita eval`, publish the per-field accuracy, and
+#   update the claims register and the PS requirement map. That is the last
+#   "Partly met" line on the map.
+#
+# WHAT I WILL NOT DO
+#   Fill these in myself, or infer them from what the extractor does. That is
+#   the one thing that would invalidate the number.
+
+signed_off_by: "Yerramsetty Sai Venkata Suchita"        # your name, as it should appear beside the figure
+signed_off_on: "2026-08-13"        # YYYY-MM-DD
+
+rulings:
+
+  # ── A. Machine says duty, label says none ────────────────────────────
+  # The classifier's false positives.
+
+  - clause: "45.1"
+    page: 114
+    question: "Does this clause impose a duty on anybody?"
+    quote: >-
+      When the client intends to make a sale transaction, shares will be
+      blocked in the demat account of the client in favour of Clearing
+      Corporation. If sale transaction is not executed, shares shall continue
+      to remain in the client's demat account and will be unblocked at the end
+      of the T day.
+    label_says: "no obligation"
+    machine_says: "1 obligation"
+    my_reading: >-
+      The label is right. "Shares shall continue to remain" is the future tense
+      of a system's behaviour, not an instruction to a broker. Nobody could be
+      found in breach of it.
+    options: [keep_label_no_obligation, change_to_obligation_bearing]
+    ruling: "keep_label_no_obligation"
+    note: ""
+
+  - clause: "57.47"
+    page: 146
+    question: "Is a liability disclaimer an obligation?"
+    quote: >-
+      The Broker shall not be liable or responsible for non-execution of the
+      DMA orders of the client due to any link/system failure at the client/
+      Broker/ exchange(s) end.
+    label_says: "no obligation"
+    machine_says: "1 obligation"
+    my_reading: >-
+      The label is right, and this is the most valuable label in the set. The
+      surface pattern says prohibition and the meaning says the opposite. If the
+      extractor ever compiles this into a MUST_NOT, a firm is told it is
+      forbidden from being not-liable, which is nonsense.
+    options: [keep_label_no_obligation, change_to_obligation_bearing]
+    ruling: "keep_label_no_obligation"
+    note: ""
+
+  # ── B. Label says duty, machine found none ───────────────────────────
+  # Extractor false negatives. The question on each is whether the label
+  # should stand, given no actor is named.
+
+  - clause: "19.5.2.3"
+    page: 51
+    question: "Is a duty on 'the framework' a duty the gold set should keep?"
+    quote: >-
+      The risk management framework shall have measures for carrying out
+      surveillance of client behaviour.
+    label_says: "MUST"
+    machine_says: "no deontic duty found"
+    my_reading: >-
+      The label is right. The duty falls on whoever maintains the framework,
+      which the section establishes. A genuine extractor gap.
+    options: [keep_label_must, change_to_not_compilable]
+    ruling: "keep_label_must"
+    note: ""
+
+  - clause: "19.5.5.5"
+    page: 54
+    question: "Should a back-reference to an earlier clause's actor count?"
+    quote: >-
+      Such dedicated team shall submit a quarterly report to the BoD of QSB.
+    label_says: "MUST"
+    machine_says: "nothing"
+    my_reading: >-
+      The label is right. Worth knowing: this one is already certified and
+      running in the gap report. The extractor missed it and a human caught it,
+      which is the review step doing its job.
+    options: [keep_label_must, change_to_not_compilable]
+    ruling: "keep_label_must"
+    note: ""
+
+  - clause: "54.4.2"
+    page: 134
+    question: "Is a passive duty with no named party still a duty?"
+    quote: >-
+      Orders/ trades placed through either fixed Internet or WAP system should
+      be accessible from both systems.
+    label_says: "SHOULD"
+    machine_says: "nothing"
+    my_reading: >-
+      The label is defensible but this is the weakest of the four, and THE ONE
+      I MOST WANT YOU TO LOOK AT. The duty is real but the actor genuinely is
+      not stated, so there is a real argument for labelling it not compilable
+      rather than a SHOULD nobody is bound by.
+    options: [keep_label_should, change_to_not_compilable]
+    ruling: "keep_label_should"
+    note: ""
+
+  - clause: "73.2.2"
+    page: 196
+    question: "Keep a duty whose actor is outside the closed vocabulary?"
+    quote: >-
+      Overseas branches of Indian Financial Institutions may register with US
+      authorities within the stipulated time period.
+    label_says: "MAY"
+    machine_says: "nothing"
+    my_reading: >-
+      The label is right and the machine is right to refuse. The extractor is
+      behaving correctly by not inventing an actor. I would NOT widen the Actor
+      vocabulary for one clause; the honest options are to keep the label and
+      accept the miss, or to mark the clause out of scope.
+    options: [keep_label_may, change_to_out_of_scope, widen_actor_vocabulary]
+    ruling: "keep_label_may"
+    note: ""
+
+  # ── C. A real labelling question ─────────────────────────────────────
+
+  - clause: "7.2.3"
+    page: 14
+    question: "Which party is bound, the clearing member or the stock exchange?"
+    quote: >-
+      Similarly, if any entity is already registered with SEBI as a clearing
+      member in any Clearing Corporation, then for operating in any other
+      Clearing Corporation(s) or any Stock Exchange, the entity shall follow the
+      procedure as prescribed in para 7.2.2 above.
+    label_says: "CLEARING_MEMBER"
+    machine_says: "STOCK_EXCHANGE"
+    my_reading: >-
+      The label is right and the machine is clearly wrong. "The entity" is the
+      clearing member; "Stock Exchange" appears later as the place of operation,
+      not the bound party. This is an extraction bug of the same class as the
+      prepositional-phrase bug fixed earlier in the object reader.
+    options: [keep_clearing_member, change_to_stock_exchange]
+    ruling: "keep_clearing_member"
+    note: ""

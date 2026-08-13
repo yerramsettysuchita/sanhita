@@ -1,0 +1,50 @@
+# Keep the image to the product and its corpus.
+#
+# corpus/ and .sanhita/ are deliberately NOT ignored here even though git
+# ignores them. The container needs the circular and the compiled rulebook, or
+# it boots to an empty screen.
+
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+tests/
+eval/
+data/
+themes/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.md
+!README.md
+
+# Uploaded workspaces are one person's documents on one machine. They must not
+# be copied into an image that other people will open.
+.sanhita/workspaces/
+.sanhita/users.json
+
+# Most of the other circulars are for local testing of the upload path.
+# Shipping all seven would add 20 MB for no benefit to a first-time visitor.
+#
+# The two Investment Adviser editions are the exception and they are worth
+# their 2.3 MB. SEBI issued that circular in June 2025 and reissued it in
+# February 2026 renumbering 376 clauses, and comparing the two is the strongest
+# thing this product does. Excluding them meant the deployed site held one
+# document and the comparison screen said "there is nothing to compare this
+# against yet", so the amendment journey could not be shown on the live site at
+# all. That was found by testing the deployment rather than the code.
+corpus/depositories-*.pdf
+corpus/research-analysts-*.pdf
+corpus/mutual-funds-*.pdf
+corpus/short-*.pdf

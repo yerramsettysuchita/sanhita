@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Coverage{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">Coverage</h1>
+  <p class="t-mute">
+    How much of the rulebook is actually certified and mapped to evidence. The
+    number is always shown next to what it was divided by.
+  </p>
+</div>
+
+{# Point in time. The ledger is hash-chained and every version is kept, so this
+   is a replay of what was actually signed, not a recollection of it. #}
+<form class="filters asof" method="get" action="{{ base }}/coverage">
+  <label class="t-caps">Show the rulebook as it stood on
+    <input class="field" type="date" name="as_of" value="{{ as_of or '' }}"
+           {% if ledger_span %}min="{{ ledger_span[0].strftime('%Y-%m-%d') }}"
+           max="{{ ledger_span[1].strftime('%Y-%m-%d') }}"{% endif %}
+           onchange="this.form.submit()">
+  </label>
+  {% if as_of_at %}
+    <a class="t-small clearfilters" href="{{ base }}/coverage">Back to today</a>
+  {% else %}
+    <span class="t-small t-mute">Leave empty for today.</span>
+  {% endif %}
+</form>
+
+{% if as_of_at %}
+<div class="caveats">
+  <div class="t-caps t-mute">You are looking at the past</div>
+  <ul>
+    <li class="t-small">
+      Every figure below is the rulebook as it stood at
+      <strong>{{ as_of_at.strftime('%d %b %Y') }}</strong>, replayed from the
+      audit ledger. A rule proposed after that date does not appear, and a rule
+      signed after it reads as unsigned.
+    </li>
+    <li class="t-small">
+      This is a replay, not a recollection. The ledger is hash-chained, so if an
+      entry had been altered the chain would not verify and the
+      <a href="{{ base }}/audit">audit screen</a> would say so.
+    </li>
+  </ul>
+</div>
+{% endif %}
+
+{# Three numbers, never one.
+
+   Quoting only the middle rung invites the reading that the compiler fails on
+   88% of the rulebook. It does not. It reached three quarters of the clauses
+   that carry a duty, and a person has signed off on a ninth of those, because
+   signing is deliberately rate limited by human review. The three rungs have
+   two different denominators and the screen says which is which. #}
+<div class="ladder">
+  {% for rung in report.ladder() %}
+  <div class="rung rung-{{ rung.key }}">
+    <div class="rung-head">
+      <span class="rung-pct t-mono">{{ rung.ratio|pct }}</span>
+      <span class="t-caps rung-label">{{ rung.label }}</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width: {{ (rung.ratio * 100) if rung.ratio > 0.004 else 0.4 }}%"></div>
+    </div>
+    <div class="rung-frac t-small t-mute">
+      <span class="t-mono">{{ rung.numerator }}</span> of
+      <span class="t-mono">{{ rung.denominator }}</span> {{ rung.unit }}
+    </div>
+    <div class="rung-limit t-micro t-mute">Limited by {{ rung.limited_by }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="ladder-note">
+  <p class="t-small">
+    The middle number is the one people misread. It is low because certification
+    is a human act and one reviewer has finite hours, not because the compiler
+    stopped. <span class="t-mono">{{ report.certification_backlog }}</span>
+    clauses are already compiled and waiting on a signature, which is the whole
+    backlog and the whole explanation.
+  </p>
+  <p class="t-small t-mute">
+    The first two rungs share a denominator, clauses that carry a duty. The third
+    has its own, certified rules, because a rule cannot map to evidence before it
+    exists.
+  </p>
+</div>
+
+{% if start_here %}
+<div class="nextup">
+  <div>
+    <div class="t-caps t-mute">Where should you start?</div>
+    <div class="nextup-id">
+      Section <span class="t-mono">{{ start_here.section }}</span> has the most
+      uncertified clauses, <span class="t-mono">{{ start_here.remaining }}</span> of them.
+      Working through it would move coverage by about
+      <span class="t-mono">{{ start_here.gain }}</span> points.
+    </div>
+  </div>
+  <a class="btn btn-solid" href="{{ base }}/queue?section={{ start_here.section }}">Open section {{ start_here.section }}</a>
+</div>
+{% endif %}
+
+<details class="definition">
+  <summary>
+    <span class="t-caps">What are we dividing by?</span>
+    <span class="t-small t-mute">Read the denominator in full</span>
+  </summary>
+  <div class="definition-body">
+
+    <!-- Written as an actual fraction rather than aligned with spaces in a
+         monospace block, which was unreadable. -->
+    <div class="formulas">
+      <div class="formula">
+        <div class="formula-name">Clause coverage</div>
+        <div class="formula-frac">
+          <div class="formula-top">Clauses that have at least one certified rule</div>
+          <div class="formula-bot">Clauses that actually carry a duty</div>
+        </div>
+      </div>
+      <div class="formula">
+        <div class="formula-name">Evidence coverage</div>
+        <div class="formula-frac">
+          <div class="formula-top">Certified rules that name at least one piece of evidence</div>
+          <div class="formula-bot">All certified rules</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The denominator, read out as plain numbers rather than one long
+         sentence with a parenthesis in the middle of it. -->
+    <div class="denom-grid">
+      <div class="denom-item">
+        <div class="denom-n">{{ report.total_clauses }}</div>
+        <div class="t-caps t-mute">Clauses parsed</div>
+        <div class="t-micro t-mute">Everything found in the source PDF</div>
+      </div>
+      <div class="denom-op">minus</div>
+      <div class="denom-item">
+        <div class="denom-n">{{ report.excluded_total }}</div>
+        <div class="t-caps t-mute">Excluded</div>
+        <div class="t-micro t-mute">Broken down below</div>
+      </div>
+      <div class="denom-op">equals</div>
+      <div class="denom-item is-answer">
+        <div class="denom-n">{{ report.obligation_bearing_clauses }}</div>
+        <div class="t-caps t-mute">Clauses that carry a duty</div>
+        <div class="t-micro t-mute">This is the denominator</div>
+      </div>
+    </div>
+
+    <div class="excluded">
+      {% for name, count in report.excluded.most_common() %}
+        <span class="chip"><span class="chip-n">{{ count }}</span>{{ name.replace('_',' ')|lower }}</span>
+      {% endfor %}
+    </div>
+
+    <p class="t-small denom">
+      {% if report.classifier_accuracy is not none %}
+        The classifier producing this denominator is
+        <strong>{{ '%.1f'|format(report.classifier_accuracy * 100) }}% accurate</strong>
+        on the gold set.
+      {% else %}
+        The classifier producing this denominator has not been scored against
+        the gold set yet.
+      {% endif %}
+      It runs independently of the extractor, so a weaker extractor cannot make
+      coverage look better.
+    </p>
+  </div>
+</details>
+
+<div class="section-rule"><span class="t-caps t-mute">Sections with the most left to do</span></div>
+
+<table class="grid">
+  <colgroup>
+    <col style="width:13%"><col style="width:16%"><col style="width:13%">
+    <col style="width:13%"><col style="width:21%"><col style="width:24%">
+  </colgroup>
+  <thead><tr>
+    <th>Section</th><th class="num">Carries a duty</th><th class="num">Certified</th>
+    <th class="num">Proposed</th><th>Progress</th><th></th>
+  </tr></thead>
+  <tbody>
+    {% for row in ranked[:24] %}
+    <tr>
+      <td class="t-mono">{{ row.section }}</td>
+      <td class="num t-mono">{{ row.obligation_bearing }}</td>
+      <td class="num t-mono">{{ row.covered }}</td>
+      <td class="num t-mono">{{ row.proposed_only }}</td>
+      <td>
+        <div class="minibar"><i style="width: {{ (row.clause_coverage * 100) if row.clause_coverage > 0.01 else 1 }}%"></i></div>
+        <span class="t-micro t-mute t-mono">{{ row.clause_coverage|pct }}</span>
+      </td>
+      {# The answer renders near the foot of the page, so the link has to take
+         you there. Without the anchor you land back at the top and nothing
+         appears to have happened. #}
+      <td>
+        {% if drill and drill.section == row.section %}
+          <a class="t-micro is-showing" href="#uncovered">Showing below</a>
+        {% else %}
+          <a class="t-micro" href="{{ base }}/coverage?section={{ row.section }}#uncovered">What is still uncovered?</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if ranked|length > 24 %}
+<p class="t-micro t-mute" style="margin-top:var(--s-3)">
+  Showing the 24 sections with the most outstanding work, of {{ ranked|length }} in total.
+</p>
+{% endif %}
+
+{% if drill %}
+<div class="drill" id="uncovered" tabindex="-1">
+  <div class="drill-head">
+    <div>
+      <div class="t-caps t-mute">Still uncovered in section {{ drill.section }}</div>
+      <p class="t-small t-mute drill-lede">
+        {% if drill.uncovered %}
+          {{ drill.uncovered|length }} clause(s) in this section carry a duty and
+          have no certified rule behind them.
+        {% endif %}
+      </p>
+    </div>
+    <a class="btn btn-quiet" href="{{ base }}/coverage">Close</a>
+  </div>
+
+  {% if not drill.uncovered %}
+    <p class="t-mute">Every clause in this section that carries a duty already has a certified rule.</p>
+  {% else %}
+  <ul class="cards">
+    {% for item in drill.uncovered %}
+    <li class="rulecard row" data-clause="{{ item.clause_id }}" tabindex="0">
+      <div class="rulecard-main">
+        <div class="rulecard-top">
+          <a class="rulecard-clause t-mono" href="{{ base }}/clause/{{ item.clause_id }}">{{ item.clause_id }}</a>
+          <span class="status">{{ item.state }}</span>
+        </div>
+        <p class="rulecard-text">{{ item.title[:150] }}</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

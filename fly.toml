@@ -1,0 +1,55 @@
+# fly.toml app configuration file generated for sanhita on 2026-08-11T23:03:22+05:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'sanhita'
+primary_region = 'bom'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  PORT = '8000'
+  SANHITA_CACHE_LIMIT = '4'
+  # Strangers can reach this URL, so the firm's own data in the worked example
+  # is kept per visitor. Without it, one reviewer uploads a filing register and
+  # the next reviewer is shown their compliance position. The rulebook stays
+  # shared, because that is the regulator's text.
+  SANHITA_SHARED = '1'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  # One machine, deliberately.
+  #
+  # A firm's own data lives on the machine's local disk: the company profile,
+  # the filing register, the assessment history. Two machines mean two disks
+  # and no shared storage between them, so a visitor who saved a company on
+  # one and reloaded onto the other watched it disappear. Verified on the
+  # deployed site before this line existed.
+  #
+  # Scaling this up needs the sidecars moved off local disk first. Until then
+  # more machines is not more capacity, it is a coin flip per request.
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 25
+    soft_limit = 12
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '10s'
+    grace_period = '1m0s'
+    method = 'GET'
+    path = '/healthz'
+
+[[vm]]
+  size = 'shared-cpu-2x'
+  memory = '2gb'
+  cpus = 2
+  memory_mb = 2048

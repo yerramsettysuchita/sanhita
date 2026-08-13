@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Clause {{ clause_id }}{% endblock %}
+
+{% block content %}
+<div class="wb-head">
+  <div>
+    <div class="t-caps t-mute">Clause</div>
+    <h1 class="wb-id t-mono">{{ clause_id }}</h1>
+    <div class="t-small t-mute">
+      page {{ node.page }}, section {{ node.section }}, classified
+      <span class="t-mono">{{ classification }}</span>
+    </div>
+  </div>
+  <div class="wb-nav">
+    <span class="t-small t-mute">{{ position }} of {{ queue_size }}</span>
+    <div class="wb-nav-buttons">
+      {% if prev_clause %}<a class="btn btn-quiet" href="{{ base }}/clause/{{ prev_clause }}" data-key="k">Previous, K</a>{% endif %}
+      {% if next_clause %}<a class="btn btn-quiet" href="{{ base }}/clause/{{ next_clause }}" data-key="j">Next, J</a>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if not views %}
+  <div class="empty">
+    <p class="t-subhead">No rule was compiled from this clause.</p>
+    <p class="t-mute">The extractor classified it as <span class="t-mono">{{ classification }}</span>.
+       That is a normal outcome. Most clauses in a master circular carry no duty at all.</p>
+    <hr class="hair">
+    <div class="verbatim t-verbatim">{{ node.text }}</div>
+  </div>
+{% endif %}
+
+{% for view in views %}
+{% set rule = view.rule %}
+<section class="spine" data-rule="{{ rule.id }}">
+
+  <div class="pane pane-source">
+    <div class="pane-head">
+      <span class="t-caps">Source clause</span>
+      <span class="t-micro t-mute t-mono">sha {{ rule.source.sha256[:16] }}</span>
+    </div>
+    <div class="verbatim t-verbatim" id="src-{{ rule.id }}">{#-
+      -#}{% for seg in view.segments -%}
+        {%- if seg.fields -%}
+          <mark class="prov" data-fields="{{ seg.field_attr }}">{{ seg.text }}</mark>
+        {%- else -%}
+          {{ seg.text }}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    <p class="pane-foot t-micro t-mute">
+      Shown exactly as the source PDF has it. Highlighting wraps around the text
+      and never changes a character, so what you see above is what was hashed.
+    </p>
+  </div>
+
+  <div class="pane pane-rule">
+    <div class="pane-head">
+      {# The heading has to follow the rule's actual state. It used to say
+         "Proposed rule" always, so a signed rule read PROPOSED RULE next to a
+         CERTIFIED chip. #}
+      <span class="t-caps">
+        {% if rule.status.value == 'CERTIFIED' %}Certified rule
+        {% elif rule.status.value == 'REJECTED' %}Rejected rule
+        {% elif rule.status.value == 'SUPERSEDED' %}Superseded rule
+        {% else %}Proposed rule{% endif %}
+      </span>
+      <span class="status status-{{ rule.status.value|lower }}">{{ rule.status.value }}</span>
+    </div>
+
+    <div class="rule-id">
+      <span class="rule-id-n t-mono">{{ rule.id }}</span>
+      <span class="t-micro t-mute">version {{ rule.version }}</span>
+      {% if rule.extraction %}<span class="t-micro t-mute">{{ rule.extraction.engine }} engine</span>{% endif %}
+    </div>
+
+    {% if view.issues %}
+    <div class="blocker" role="alert">
+      <div class="t-caps">Cannot certify yet</div>
+      <ul>{% for issue in view.issues %}<li>{{ issue }}</li>{% endfor %}</ul>
+
+      {% if rule.deadline and rule.deadline.needs_resolution %}
+      <form class="resolve" method="post" action="{{ base }}/clause/{{ clause_id }}/resolve">
+        <input type="hidden" name="obligation_id" value="{{ rule.id }}">
+        <p class="t-small">
+          The clause says <span class="t-mono">â€œ{{ rule.quote('deadline') or '' }}â€</span>
+          and never states which kind of days it means. Does the
+          {{ rule.deadline.offset_days }} day offset count working days or
+          calendar days? Sanhita will not choose for you.
+        </p>
+        <div class="resolve-row">
+          <label><input type="radio" name="business_days" value="BUSINESS" required> Working days</label>
+          <label><input type="radio" name="business_days" value="CALENDAR"> Calendar days</label>
+          <button class="btn btn-solid" type="submit">Save this answer</button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <dl class="fields">
+      {% for f in view.fields %}
+      <div class="field-row{{ ' is-lowconf' if f.confidence is not none and f.confidence < 0.7 }}"
+           data-field="{{ f.name }}" tabindex="0">
+        <dt class="t-caps">{{ f.label }}</dt>
+        <dd>
+          <span class="{{ 't-mono' if f.mono else '' }}">{{ f.value }}</span>
+          {% if f.confidence is not none %}
+            <span class="conf" title="how confident the extractor is about this field">{{ '%.2f'|format(f.confidence) }}</span>
+          {% endif %}
+          {% if not f.quote %}
+            <span class="nospan" title="no words in the clause were recorded for this field">no span</span>
+          {% endif %}
+          {# A real element rather than a ::after, so a screen reader reads it
+             and it can sit in the flex row with the other qualifiers. #}
+          {% if f.confidence is not none and f.confidence < 0.7 %}
+            <span class="lowconf-tag" title="the extractor is not sure about this field">low confidence</span>
+          {% endif %}
+        </dd>
+      </div>
+      {% endfor %}
+    </dl>
+
+    {% if rule.status.value == 'CERTIFIED' %}
+      <div class="certified-seal is-certified-seal">
+        <div class="t-caps">Certified</div>
+        <div class="t-small">{{ rule.certification.certified_by }}</div>
+        {% if rule.certification.certified_by == 'Sanhita Demo Officer' %}
+        <div class="t-micro t-mute">
+          Certified in the Sanhita demonstration environment, not by a real
+          compliance officer at a real firm.
+        </div>
+        {% endif %}
+        <div class="t-micro t-mute">{{ rule.certification.certified_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+        <div class="t-micro t-mono sig">{{ rule.certification.signature }}</div>
+        <div class="t-micro t-mute">Version locked. This rule can no longer be edited.</div>
+        {# Said plainly, because a hex string next to a person's name invites
+           the reading that the person's key produced it. One key belongs to
+           this deployment, not to the officer. #}
+        <div class="t-micro t-mute">
+          The signature covers the rule's content under this deployment's key,
+          so any later change to the rule breaks it. It does not cover the name
+          above, which is the account that was signed in when the rule was
+          certified.
+        </div>
+      </div>
+    {% elif rule.status.value == 'REJECTED' %}
+      <div class="rejected-note">
+        <div class="t-caps">Rejected</div>
+        <p class="t-small t-mute">Kept for the record. It will never run.</p>
+      </div>
+    {% else %}
+      <div class="actions">
+        {% if not signing_key_present %}
+          <p class="t-small warn">SANHITA_SIGNING_KEY is not set, so certification is turned off.</p>
+        {% endif %}
+        {# Who acted is taken from the session, not from a box. A name typed
+           into a form is a record of nobody, and the signature cannot cover it
+           in any case: a signature cannot cover the bytes containing it. #}
+        {% if not user %}
+          <p class="t-small warn">
+            Certifying, rejecting and amending a rule are acts by a named
+            person, so they need an account.
+            <a href="/signin">Sign in</a> to record one against your name.
+          </p>
+        {% endif %}
+
+        <form method="post" action="{{ base }}/clause/{{ clause_id }}/certify" class="act act-certify"
+              {% if view.issues or not signing_key_present or not user %}data-blocked="1"{% endif %}>
+          <input type="hidden" name="obligation_id" value="{{ rule.id }}">
+          <input class="field" type="text" name="note" placeholder="note, optional">
+          <button class="btn btn-gold" type="submit" data-key="c"
+                  {% if view.issues or not signing_key_present or not user %}disabled{% endif %}>
+            Certify <kbd>C</kbd>
+          </button>
+          {% if user %}
+          <span class="t-micro t-mute">
+            Recorded against <strong>{{ user.name }}</strong>, the account signed in.
+          </span>
+          {% endif %}
+        </form>
+
+        <details class="act">
+          <summary class="btn btn-quiet" data-key="e">Edit <kbd>E</kbd></summary>
+          <form method="post" action="{{ base }}/clause/{{ clause_id }}/edit">
+            <input type="hidden" name="obligation_id" value="{{ rule.id }}">
+            <p class="t-micro t-mute">Editing makes a new version. The current one is never changed.</p>
+            <label class="t-caps">Verb</label>
+            <input class="field" type="text" name="verb" value="{{ rule.action.verb }}">
+            <label class="t-caps">Object</label>
+            <input class="field" type="text" name="object" value="{{ rule.action.object }}">
+            {% if rule.deadline and rule.deadline.offset_days is not none %}
+            <label class="t-caps">Offset days</label>
+            <input class="field" type="text" name="offset_days" value="{{ rule.deadline.offset_days }}">
+            {% endif %}
+            <input class="field" type="text" name="note" placeholder="why are you changing it?">
+            <button class="btn btn-solid" type="submit">Save as a new version</button>
+          </form>
+        </details>
+
+        <details class="act">
+          <summary class="btn btn-quiet" data-key="r">Reject <kbd>R</kbd></summary>
+          <form method="post" action="{{ base }}/clause/{{ clause_id }}/reject">
+            <input type="hidden" name="obligation_id" value="{{ rule.id }}">
+            <input class="field" type="text" name="reason" placeholder="why are you rejecting it?" required>
+            <button class="btn btn-danger" type="submit">Reject</button>
+          </form>
+        </details>
+      </div>
+    {% endif %}
+
+    {# Who inside the firm discharges this rule.
+
+       Not part of the certification and deliberately separate from it. A
+       certification is a claim about what the regulation says, signed and
+       frozen. A binding is a claim about how this firm is organised, and two
+       firms will bind the same rule to different teams and both be right. It
+       is written to a sidecar file, so recording one never disturbs the
+       signature over the rule. #}
+    <details class="binding" {{ 'open' if not view.binding }}>
+      <summary>
+        <span class="t-caps t-mute">Owned inside the firm by</span>
+        {% if view.binding %}
+          <span class="binding-who">{{ view.binding.describe() }}</span>
+        {% else %}
+          <span class="binding-none t-small">Nobody yet</span>
+        {% endif %}
+      </summary>
+
+      <form class="binding-form" method="post" action="{{ base }}/clause/{{ clause_id }}/bind">
+        <input type="hidden" name="obligation_id" value="{{ rule.id }}">
+        <div class="binding-grid">
+          <label class="t-caps">Process
+            <input class="field" type="text" name="process" placeholder="Daily margin reporting"
+                   value="{{ view.binding.process if view.binding else '' }}">
+          </label>
+          <label class="t-caps">Function
+            <input class="field" type="text" name="function" placeholder="Operations"
+                   value="{{ view.binding.function if view.binding else '' }}">
+          </label>
+          <label class="t-caps">System of record
+            <input class="field" type="text" name="system" placeholder="margin engine"
+                   value="{{ view.binding.system if view.binding else '' }}">
+          </label>
+          <label class="t-caps">Procedure
+            <input class="field" type="text" name="control_ref" placeholder="SOP-12"
+                   value="{{ view.binding.control_ref if view.binding else '' }}">
+          </label>
+          <label class="t-caps">Your name
+            <input class="field" type="text" name="by"
+                   value="{{ view.binding.bound_by if view.binding else '' }}">
+          </label>
+        </div>
+        <div class="binding-actions">
+          <button class="btn btn-solid" type="submit">
+            {{ 'Update binding' if view.binding else 'Record binding' }}
+          </button>
+          <span class="t-micro t-mute">
+            Leave the function empty to remove the binding. This does not touch
+            the signature over the rule.
+          </span>
+        </div>
+      </form>
+    </details>
+
+    {% if view.history %}
+    <div class="history">
+      <div class="t-caps t-mute">History</div>
+      {% for entry in view.history %}
+        <div class="t-micro t-mute">
+          {{ entry.at.strftime('%Y-%m-%d %H:%M') }},
+          {{ entry.from_state or 'new' }} to {{ entry.to_state }}, by {{ entry.actor }}
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.SANHITA_NAV = {
+    prev: {{ (prev_clause and ("'" + prev_clause + "'")) or 'null' }},
+    next: {{ (next_clause and ("'" + next_clause + "'")) or 'null' }}
+  };
+</script>
+{% endblock %}

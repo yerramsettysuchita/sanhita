@@ -1,0 +1,84 @@
+<script>
+(function () {
+  "use strict";
+  var drop = document.getElementById("evdrop");
+  var pick = document.getElementById("evpick");
+  var input = document.getElementById("evfile");
+  var out = document.getElementById("evstatus");
+  if (!drop) return;
+
+  function say(message, kind) {
+    out.hidden = false;
+    out.textContent = message;
+    out.className = "dropzone-status" + (kind ? " is-" + kind : "");
+  }
+
+  function send(file) {
+    if (!file) return;
+    drop.classList.add("is-busy");
+    say("Reading " + file.name + ". A long report takes a few seconds.", "busy");
+
+    /* The filename decides which reader runs, so it has to reach the server.
+       The body is the raw bytes, which keeps XLSX and PDF intact. */
+    fetch(window.SANHITA_BASE + "/evidence", {
+      method: "POST",
+      headers: { "x-sanhita-filename": file.name },
+      body: file
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        var d = res.data;
+        drop.classList.remove("is-busy");
+        if (!res.ok || !d.ok) {
+          /* Every rejected row is named. An importer that hides bad rows will
+             one day hide the row that mattered. */
+          var lines = (d.rows || []).map(function (r) {
+            return r.line ? "line " + r.line + ": " + r.problem : r.problem;
+          });
+          say((d.error || "That file could not be read.") +
+              (lines.length ? "\n" + lines.join("\n") : ""), "bad");
+          return;
+        }
+        /* `awaiting` is what the server actually sends. This read `needing_review`
+           for a while, which the response has never contained, so the count of
+           items needing a person silently never appeared. */
+        var note = "Read " + d.candidates + " item(s) from the " + (d.format || "file") + ".";
+        if (d.accepted) {
+          note += " " + d.accepted + " named a requirement and became evidence.";
+        }
+        if (d.awaiting) {
+          note += " " + d.awaiting + " need you to confirm which requirement they satisfy.";
+        }
+        if (d.rejected) {
+          note += " " + d.rejected + " row(s) were refused.";
+        }
+        /* A correction that clears a breach is exactly the kind of change
+           somebody should be told about rather than left to notice. */
+        if (d.superseded) {
+          note += " " + d.superseded + " replaced an earlier record of the same" +
+                  " occasion. Assessments already run keep their own copy.";
+        }
+        say(note, "good");
+        window.setTimeout(function () { window.location.reload(); }, 1200);
+      })
+      .catch(function () {
+        drop.classList.remove("is-busy");
+        say("The upload did not reach the server.", "bad");
+      });
+  }
+
+  pick.addEventListener("click", function () { input.click(); });
+  input.addEventListener("change", function () { send(input.files[0]); });
+
+  ["dragenter", "dragover"].forEach(function (name) {
+    drop.addEventListener(name, function (e) { e.preventDefault(); drop.classList.add("is-over"); });
+  });
+  ["dragleave", "drop"].forEach(function (name) {
+    drop.addEventListener(name, function (e) { e.preventDefault(); drop.classList.remove("is-over"); });
+  });
+  drop.addEventListener("drop", function (e) {
+    if (e.dataTransfer && e.dataTransfer.files.length) send(e.dataTransfer.files[0]);
+  });
+  drop.addEventListener("submit", function (e) { e.preventDefault(); });
+})();
+</script>

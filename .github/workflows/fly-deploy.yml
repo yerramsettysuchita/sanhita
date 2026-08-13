@@ -1,0 +1,79 @@
+# Push to main, and the live site updates.
+#
+# Fly has no "connect a repository" button the way some hosts do, so continuous
+# deployment is this file. It runs `fly deploy`, which builds the same
+# Dockerfile you can build locally and rolls the new image out.
+#
+# The tests run first and the deploy is gated on them. That ordering is the
+# whole value: Sanhita's central claim is that a certified rule traces to an
+# exact clause and its hash, and the suite contains the test that catches a
+# parse change breaking that. Shipping a build that fails it would put a live
+# site behind rules whose signatures no longer match their text.
+
+name: Deploy to Fly
+
+on:
+  push:
+    branches: [main]
+  # So you can redeploy from the Actions tab without an empty commit.
+  workflow_dispatch:
+
+concurrency:
+  # One deploy at a time. Two overlapping rollouts of the same app is how you
+  # end up unsure which image is actually live.
+  group: fly-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test before shipping
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[dev,web]"
+
+      - name: Run the suite
+        # Corpus-dependent tests skip themselves when the circular is absent,
+        # and the worked example IS committed, so they run here for real.
+        run: pytest
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          # Create with:  fly tokens create deploy
+          # Store as a repository secret named FLY_API_TOKEN.
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Confirm the deployed instance is actually serving
+        # A green deploy is not the same as a working site. Three real bugs in
+        # this project built cleanly and served broken pages, so the pipeline
+        # checks the live health endpoint rather than trusting the rollout.
+        run: |
+          set -e
+          url="https://${{ vars.FLY_APP_NAME || 'sanhita' }}.fly.dev/healthz"
+          for attempt in $(seq 1 20); do
+            body=$(curl -fsS --max-time 15 "$url" 2>/dev/null) && break
+            echo "not up yet (attempt $attempt)"; sleep 6
+          done
+          echo "$body"
+          echo "$body" | grep -q '"ok":true' || { echo "health check failed"; exit 1; }
+          # The parse must still reproduce the tree the signatures were made
+          # over. A dependency drifting under us silently invalidates all 183.
+          echo "$body" | grep -q '3a0a41f5deee3fd1c909cfa5979eafb497804bc37b0c1b96ad8498d0a0c9e45d' \
+            || { echo "FINGERPRINT CHANGED. The deployed parse does not match the signed store."; exit 1; }
+          echo "fingerprint matches the signed store"

@@ -1,0 +1,2285 @@
+/* ============================================================================
+   SANHITA certification workbench.
+   Composed from ui/tokens.css. The brand violet marks anything interactive.
+   Gold is never used here except on a certified rule, because that is the one
+   signal a supervisor is trained to trust. Motion happens on certification
+   and nowhere else in this app.
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Off screen until focused. The masthead carries up to eight links, so without
+   this a keyboard user tabs through all of them on every page. */
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 999;
+  padding: var(--s-3) var(--s-4);
+  background: var(--brand-solid); color: #fff;
+  text-decoration: none; border-radius: 0 0 var(--r-sm) 0;
+  font-size: var(--fs-small);
+}
+.skip:focus { left: 0; }
+.shell:focus { outline: none; }
+
+/* ------------------------------------------------------------- masthead -- */
+
+/* Everything in the bar sits on one optical centre line. Baseline alignment
+   was the bug: the logo, the wordmark, the small caps caption and the
+   underlined nav links all have different baselines, so they staggered. */
+/* The masthead and the journey row, stuck to the top as one block. Sticking
+   them separately would need the lower one to know the height of the upper,
+   which changes with the font and the window. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+/* Four things share this bar now: the brand, the document switcher, the
+   Advanced menu and the account. The six journey stages moved to a row of
+   their own, because ten items on one line meant the last two printed through
+   each other at any width a person actually uses. */
+.masthead {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--s-5);
+  padding: var(--s-3) var(--s-5);
+  border-bottom: var(--border);
+  background: var(--surface-raised);
+}
+/* The switcher sizes to its document name and may shrink; the empty space
+   goes between it and the right-hand items, which is what keeps those from
+   ever colliding with it. Stretching the switcher instead left a very wide
+   empty box with a short name floating at one end of it. */
+.masthead .docpick { flex: 0 1 auto; min-width: 0; }
+.masthead .nav-secondary { margin-left: auto; flex: none; }
+
+.brand {
+  flex: none;
+  text-decoration: none; color: var(--brand);
+  display: flex; align-items: center; gap: var(--s-3);
+}
+.brand .mark { flex: none; display: block; }
+.brand-mark {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-subhead);
+  letter-spacing: var(--tr-head);
+  line-height: 1;
+  white-space: nowrap;
+}
+/* The caption is a separate fact from the product name, so it gets its own
+   compartment. It is also the least useful thing in the bar, so it is the
+   first to go when space runs out, and it never wraps to a second line. */
+.brand-sub {
+  color: var(--brand);
+  line-height: 1;
+  white-space: nowrap;
+  padding-left: var(--s-3);
+  margin-left: var(--s-1);
+  border-left: var(--hair-w) solid var(--brand-hair);
+}
+
+.nav { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
+/* The document stages take the slack; the global links never shrink. */
+.nav[aria-label="This document"] { flex: 1 1 auto; overflow: hidden; }
+/* The active underline adds 8px below the text and nothing above it, which
+   pushes the letters off the bar's centre line. This used to be corrected by
+   translating the whole <nav> down 4px, but that only moved links that were
+   inside one: the bare "Sign in" link sits in .mast-end and was left 4px
+   higher than Documents and Facts. Padding the box symmetrically fixes every
+   nav link wherever it lives, with no transform to keep in sync. */
+.nav-link {
+  text-decoration: none;
+  color: var(--text-mute);
+  font-size: var(--fs-small);
+  line-height: 1;
+  white-space: nowrap;
+  padding-top: 8px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur-1) var(--ease);
+}
+.nav-link:hover { color: var(--brand); }
+.nav-link.is-current { color: var(--text); border-bottom-color: var(--brand); }
+
+/* Everything about the product rather than about this document, kept apart by
+   a divider so the two groups do not read as one list of eight. */
+.mast-end {
+  flex: none;
+  display: flex; align-items: center; gap: var(--s-4);
+  padding-left: var(--s-5);
+  border-left: var(--border);
+}
+.nav-global { flex: none; }
+
+/* Scoped with .masthead so these beat the base rules, which are defined later
+   in this file. A media query does not raise specificity, so an unscoped
+   override here would simply lose to whatever comes after it. */
+@media (max-width: 1500px) { .masthead .brand-sub { display: none; } }
+@media (max-width: 1180px) { .masthead .docpick-name { max-width: 150px; } }
+@media (max-width: 1040px) {
+  .masthead .nav { gap: var(--s-3); }
+  .masthead .mast-end { padding-left: var(--s-3); gap: var(--s-3); }
+  .stagebar .lifecycle { gap: 2px; }
+  .stagebar .lifestep { padding: 7px 8px; }
+}
+@media (max-width: 900px) {
+  /* The journey row already scrolls on its own. This is only the masthead,
+     which at this width is the brand, the Advanced menu and the account. */
+  .masthead {
+    overflow-x: auto; gap: var(--s-4);
+    scrollbar-width: thin;
+  }
+  .masthead .brand-mark { font-size: var(--fs-body); }
+  .masthead .docpick { display: none; }
+}
+@media (max-width: 720px) {
+  /* Only the number and the current stage's name survive. Six words do not fit
+     on a phone, and a numbered dot the user can still count is better than a
+     row of truncated labels. */
+  .stagebar .lifestep:not(.is-current) .lifestep-t { display: none; }
+}
+
+.shell { padding: var(--s-6); max-width: 1560px; margin: 0 auto; }
+
+.page-head { margin-bottom: var(--s-5); }
+/* Explanatory copy runs the width of the shell. A reading-measure cap makes
+   sense for clause text, where a person reads every word in sequence; it makes
+   a page subtitle look like it stopped halfway across the screen. */
+.page-head p { margin: var(--s-2) 0 0; font-size: var(--fs-small); line-height: 1.6; }
+
+/* ------------------------------------------------------------- the spine -- */
+
+.spine {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s-6);
+  align-items: start;
+  margin-bottom: var(--s-7);
+}
+@media (max-width: 1080px) { .spine { grid-template-columns: 1fr; } }
+
+.pane {
+  border: var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.pane-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: var(--border);
+  background: var(--surface-raised);
+}
+/* A certified rule is the only thing in this product allowed to wear gold. */
+.pane:has(.is-certified-seal) { border-color: var(--gold-hair); }
+.pane:has(.is-certified-seal) .pane-head { background: var(--gold-wash); }
+.pane-foot { padding: var(--s-3) var(--s-4); border-top: var(--border); margin: 0; }
+
+.verbatim {
+  padding: var(--s-5);
+  max-height: 62vh;
+  overflow-y: auto;
+  color: var(--text);
+}
+
+/* Provenance highlight. Quiet at rest, unmistakable when lit, and never gold,
+   which is reserved for certification alone. */
+mark.prov {
+  background: var(--brand-wash);
+  color: inherit;
+  border-radius: 3px;
+  padding: 1px 0;
+  box-shadow: 0 1px 0 var(--brand-hair);
+  transition: background var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+mark.prov.is-lit {
+  background: rgba(172,85,255,.20);
+  box-shadow: 0 0 0 2px var(--brand);
+  color: var(--brand-deep);
+}
+
+/* ------------------------------------------------------------ rule pane -- */
+
+.wb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--s-5);
+  margin-bottom: var(--s-5);
+}
+.wb-id { font-size: var(--fs-head); margin: var(--s-1) 0; }
+.wb-nav { text-align: right; }
+.wb-nav-buttons { display: flex; gap: var(--s-2); margin-top: var(--s-2); }
+
+/* The rule's identity line. The id leads because it is what a person quotes;
+   the version and the engine that produced it follow, quieter. */
+.rule-id {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: var(--border);
+  font-size: var(--fs-small);
+}
+.rule-id-n {
+  font-size: var(--fs-body); color: var(--text);
+  font-weight: var(--fw-medium);
+}
+
+.fields { margin: 0; padding: 0; }
+
+/* The label and the value must sit on one line, whatever the value's length.
+   The two use different type sizes, so aligning their boxes leaves the caps
+   label floating; aligning their baselines puts the label exactly level with
+   the first line of the value, and a value that wraps grows downward from
+   there rather than dragging its label with it. */
+.field-row {
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: var(--border);
+  cursor: default;
+  outline: none;
+  transition: background var(--dur-1) var(--ease);
+}
+.field-row:last-child { border-bottom: 0; }
+.field-row:hover { background: rgba(20,20,18,.016); }
+.field-row.is-active {
+  background: var(--brand-wash);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.field-row dt {
+  color: var(--text-mute); margin: 0;
+  line-height: 1.5;
+}
+.field-row.is-active dt { color: var(--brand-text); }
+.field-row dd {
+  margin: 0; font-size: var(--fs-small); line-height: 1.55;
+  word-break: break-word;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2);
+}
+/* The value itself leads. Everything qualifying it is smaller and quieter. */
+.field-row dd > span:first-child { color: var(--text); }
+
+/* Qualifiers on a field: how sure, and whether any words back it up. Both are
+   caveats, so they share one quiet chip style rather than competing. */
+.conf, .nospan, .lowconf-tag {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-caps); letter-spacing: var(--tr-caps);
+  text-transform: uppercase; white-space: nowrap;
+  border-radius: 100px; padding: 2px 8px;
+}
+.conf {
+  font-variant-numeric: tabular-nums; text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-mute); background: var(--surface-sunken);
+}
+.nospan {
+  color: var(--text-mute);
+  border: var(--hair-w) solid var(--hair);
+}
+/* A field the extractor is unsure about is the reason a person is reading this
+   screen, so it is the one qualifier allowed to carry colour. */
+.lowconf-tag {
+  color: var(--diff-rm);
+  background: var(--diff-rm-wash);
+  border: var(--hair-w) solid rgba(158,58,52,.26);
+}
+.field-row.is-lowconf .conf { color: var(--diff-rm); background: var(--diff-rm-wash); }
+
+/* ------------------------------------------------------------- statuses -- */
+
+.status {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-caps);
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  border: var(--hair-w) solid var(--hair);
+  color: var(--text-mute);
+}
+.status-certified { color: var(--gold-text); border-color: var(--gold-hair); background: var(--gold-wash); }
+.status-rejected  { color: var(--diff-rm); border-color: rgba(158,58,52,.3); }
+.status-superseded, .status-proposed { color: var(--text-mute); }
+
+/* ------------------------------------------------------------- blockers -- */
+
+.blocker {
+  margin: var(--s-4);
+  padding: var(--s-4);
+  border: var(--hair-w) solid rgba(158, 58, 52, .35);
+  border-radius: var(--r-md);
+  background: var(--diff-rm-wash);
+}
+.blocker .t-caps { color: var(--diff-rm); }
+.blocker ul { margin: var(--s-2) 0 0; padding-left: var(--s-5); font-size: var(--fs-small); }
+.blocker li { margin-bottom: var(--s-1); }
+
+.resolve { margin-top: var(--s-4); padding-top: var(--s-3); border-top: var(--border); }
+.resolve p { margin: 0 0 var(--s-3); }
+.resolve-row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.resolve-row label { font-size: var(--fs-small); display: flex; align-items: center; gap: var(--s-1); }
+
+/* -------------------------------------------------------------- actions -- */
+
+/* Certifying is the act the whole screen exists for, so it is separated from
+   the fields above it and from the two quieter actions below. */
+.actions {
+  padding: var(--s-5);
+  display: grid; gap: var(--s-3);
+  background: var(--surface-sunken);
+  border-top: var(--border);
+}
+.act { display: grid; gap: var(--s-2); }
+.act form { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
+.act-certify {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: var(--s-3); align-items: center;
+  padding: var(--s-4);
+  border: var(--hair-w) solid var(--gold-hair);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+/* The two inputs are prompts rather than labelled fields, so their text is
+   centred in the box and stays centred once something is typed. */
+.act-certify .field { text-align: center; }
+.act-certify .field::placeholder { color: var(--text-mute); opacity: 1; }
+.act-certify .btn { white-space: nowrap; }
+/* Blocked by an open question: the whole panel goes quiet rather than only the
+   button, so it does not look like a control that is simply slow. */
+.act-certify[data-blocked] { border-color: var(--hair); background: transparent; }
+@media (max-width: 620px) {
+  .act-certify { grid-template-columns: 1fr; }
+}
+
+.field {
+  font: inherit;
+  font-size: var(--fs-small);
+  padding: 7px 10px;
+  border: var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  /* An <input> carries an intrinsic minimum width of about twenty characters.
+     Inside a grid or flex track that minimum wins by default and the field
+     overflows its container instead of shrinking with it. */
+  min-width: 0;
+  /* And never wider than whatever is holding it, whatever that turns out to
+     be. Cheap insurance against the same bug in a layout added later. */
+  max-width: 100%;
+}
+.field:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+.btn {
+  font-family: var(--font);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-small);
+  letter-spacing: var(--tr-body);
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  border: var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  /* A button's label belongs in the middle of it. Without this, any button
+     stretched to a width wider than its text leaves the label at the left
+     edge, because a flex container packs to the start and text-align does
+     nothing to it. Centring here fixes every such button at once, and has no
+     effect on the auto-width ones whose content defines their size. */
+  justify-content: center;
+  gap: var(--s-2);
+  list-style: none;
+}
+.btn::-webkit-details-marker { display: none; }
+.btn:hover { background: var(--surface-sunken); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-solid { background: var(--brand-solid); color: #fff; border-color: var(--brand-solid); }
+.btn-solid:hover { background: #9440EE; border-color: #9440EE; }
+.btn-danger { border-color: rgba(158,58,52,.4); color: var(--diff-rm); }
+.btn-quiet { color: var(--text-mute); }
+
+/* Gold is the certify affordance only because the act it performs *is*
+   certification. It is never used decoratively anywhere else. */
+.btn-gold { border-color: var(--gold-hair); color: var(--gold-text); background: var(--gold-wash); }
+.btn-gold:hover:not(:disabled) { background: rgba(195,154,78,.18); }
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  border: var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  color: var(--text-mute);
+}
+
+.warn { color: var(--diff-rm); }
+.good { color: var(--diff-add); }
+.bad  { color: var(--diff-rm); }
+
+/* ---------------------------------------------------------- certified -- */
+
+.certified-seal {
+  margin: var(--s-4);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  display: grid;
+  gap: var(--s-1);
+}
+.certified-seal .sig { word-break: break-all; color: var(--text-mute); }
+.is-certified-seal { color: var(--gold-text); }
+
+@keyframes seal-in {
+  0%   { opacity: 0; transform: translateY(4px) scale(.99); }
+  100% { opacity: 1; transform: none; }
+}
+.certified-seal.just-sealed { animation: seal-in var(--dur-3) var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) { .certified-seal.just-sealed { animation: none; } }
+
+.rejected-note { margin: var(--s-4); padding: var(--s-4); border: var(--border); border-radius: var(--r-md); }
+.rejected-note .t-caps { color: var(--diff-rm); }
+
+/* Same padding as .actions and .binding above it. These three stack inside one
+   card, so a 4px difference between them reads as one of them being misaligned
+   rather than as a deliberate hierarchy. */
+.history { padding: var(--s-5); border-top: var(--border); display: grid; gap: 2px; }
+
+/* --------------------------------------------------------------- counts -- */
+
+.counts { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-bottom: var(--s-5); }
+.count {
+  flex: 1 1 150px;
+  border: var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  background: var(--surface-raised);
+  text-decoration: none;
+  color: inherit;
+}
+.count:hover { background: var(--surface-sunken); }
+.count-n {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-title);
+  letter-spacing: var(--tr-title);
+  line-height: 1.1;
+}
+.count-gold { color: var(--gold); }
+
+/* -------------------------------------------------------------- filters -- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  align-items: center;
+  padding: var(--s-3) var(--s-4);
+  border: var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+  margin-bottom: var(--s-4);
+}
+.filters label { display: flex; align-items: center; gap: var(--s-3); color: var(--text-mute); }
+.filters .check {
+  font-family: var(--font); font-size: var(--fs-small);
+  letter-spacing: 0; text-transform: none; gap: var(--s-2);
+}
+.filters .check input { accent-color: var(--brand-solid); width: 15px; height: 15px; }
+
+/* The browser's own select chrome does not match anything else on the page,
+   and its arrow sits at a different weight to our type. Draw our own. The
+   chevron is an inline data URI, so nothing is fetched. */
+.filters select.field {
+  appearance: none; -webkit-appearance: none;
+  padding: 7px 30px 7px 11px;
+  min-width: 96px;
+  cursor: pointer;
+  color: var(--text);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23716E67' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  transition: border-color var(--dur-1) var(--ease);
+}
+.filters select.field:hover { border-color: var(--brand-hair); }
+
+.clearfilters { margin-left: auto; color: var(--brand-text); }
+/* The point-in-time picker. Reading the past is a deliberate act, so the
+   control that switches into it is marked rather than blending in. */
+.asof { border-color: var(--brand-hair); background: var(--brand-wash); }
+.asof input[type="date"] { min-width: 170px; }
+
+/* ---------------------------------------------------------------- grid -- */
+
+/* Full width of the shell. Every heading is centred over its own column and
+   every value is centred under it, so the two always agree. */
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--surface-raised);
+  font-size: var(--fs-small);
+}
+.grid thead th {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-caps);
+  letter-spacing: var(--tr-caps);
+  text-transform: uppercase;
+  color: var(--text-mute);
+  padding: var(--s-4);
+  border-bottom: var(--border);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.grid td {
+  text-align: center;
+  padding: var(--s-4);
+  border-bottom: var(--border);
+  vertical-align: middle;
+}
+.grid tbody tr:last-child td { border-bottom: 0; }
+/* Zebra banding carries the eye across a wide row without it slipping into
+   the row above or below. */
+.grid tbody tr:nth-child(even) { background: rgba(20,20,18,.018); }
+.grid tbody tr:hover { background: var(--surface-sunken); }
+
+/* Digits stay tabular so a column of numbers still stacks cleanly. */
+.grid .num,
+.grid thead th.num { text-align: center; font-variant-numeric: tabular-nums; }
+.grid a { color: inherit; }
+
+/* The columns share the width evenly, which keeps each heading sitting
+   directly over the values it names. */
+.grid col { width: auto; }
+
+tr.row { cursor: pointer; }
+tr.row.is-cursor { background: var(--brand-wash); box-shadow: inset 3px 0 0 var(--brand); }
+tr.row:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; }
+
+.lowconf { color: var(--diff-rm); }
+.badge {
+  display: inline-block;
+  min-width: 20px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  border: var(--hair-w) solid rgba(158,58,52,.35);
+  color: var(--diff-rm);
+  border-radius: var(--r-sm);
+  padding: 0 5px;
+}
+
+/* The count and the keyboard hint are two unrelated statements. They were run
+   together into one sentence, so they now sit at opposite ends of the line. */
+.rowcount {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: var(--s-3);
+  margin: 0 0 var(--s-4);
+}
+.rowcount-n { display: inline-flex; align-items: baseline; gap: var(--s-2); }
+.rowcount-hint { display: inline-flex; align-items: baseline; gap: 5px; }
+.rowcount a { color: var(--brand-text); }
+
+.pager {
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--s-4); margin-top: var(--s-5);
+}
+.pager .is-disabled { opacity: .4; cursor: default; pointer-events: none; }
+.pager-at { flex: none; }
+
+.bulk {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: var(--s-4);
+  align-items: center;
+  padding: var(--s-3) var(--s-4);
+  border: var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+  margin-top: var(--s-3);
+}
+
+/* ------------------------------------------------------------- coverage -- */
+
+.definition {
+  border: var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  background: var(--surface-raised);
+  margin-bottom: var(--s-5);
+}
+.definition pre { margin: var(--s-2) 0 var(--s-4); color: var(--text-mute); white-space: pre-wrap; }
+/* The whole block is centred, so the exclusion chips and the sentence that
+   follows them are too. The sentence had a reading-measure cap on it, which
+   broke it across two lines in the middle of a very wide card. */
+.denom { max-width: none; margin: var(--s-4) 0 0; line-height: 1.6; text-align: center; }
+.excluded { display: flex; flex-wrap: wrap; gap: var(--s-2); justify-content: center; }
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  border: var(--border);
+  border-radius: 100px;
+  padding: 5px 12px 5px 8px;
+  font-size: var(--fs-micro);
+  color: var(--text-mute);
+  background: var(--surface-raised);
+}
+.chip-n {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-medium);
+  color: var(--text);
+  background: var(--surface-sunken);
+  border-radius: 100px;
+  padding: 1px 7px;
+}
+/* The drilled-into section. It is the answer to a link two thirds of a page
+   above it, so it announces itself rather than blending into the flow. */
+.drill {
+  margin-top: var(--s-6); scroll-margin-top: 96px;
+  border: var(--hair-w) solid var(--brand-hair); border-radius: var(--r-lg);
+  background: var(--brand-wash); padding: var(--s-5);
+  outline: none;
+}
+.drill h2 { margin-bottom: var(--s-3); }
+.drill-head {
+  display: flex; flex-wrap: wrap; gap: var(--s-4);
+  align-items: baseline; justify-content: space-between;
+  margin-bottom: var(--s-4);
+}
+.drill-lede { margin: var(--s-2) 0 0; }
+.drill .rulecard { background: var(--surface); }
+/* The row you are currently looking at, marked in the table above. */
+.is-showing { color: var(--text-mute); font-style: italic; }
+
+/* ---------------------------------------------------------------- audit -- */
+
+.audit-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-6);
+  align-items: flex-start;
+  padding: var(--s-4);
+  border: var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-raised);
+  margin-bottom: var(--s-4);
+}
+.diff { margin-bottom: 2px; }
+.diff-add { color: var(--diff-add); }
+.diff-rm  { color: var(--diff-rm); text-decoration: line-through; text-decoration-thickness: 1px; }
+
+/* ═══════════════════════════════════════════════════ progress and lanes ══ */
+
+.progress-card {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+  margin-bottom: var(--s-4);
+}
+/* ── Stat rhythm ────────────────────────────────────────────────────────
+   A figure, the label naming it, and the sentence qualifying it are three
+   separate statements. They were stacked with no air, so they read as one
+   block of noise. Three steps, always the same three steps. */
+.progress-card .t-caps,
+.cov-dial .t-caps,
+.cov-stat .t-caps { margin-top: var(--s-2); }
+
+.cov-stat .t-micro,
+.audit-status .t-micro,
+.audit-meta .t-code { margin-top: var(--s-2); line-height: 1.5; }
+
+.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); }
+.progress-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-title); letter-spacing: -.028em; line-height: 1.1;
+}
+.progress-pct {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-head); letter-spacing: -.024em; color: var(--gold-text);
+}
+.progress-track {
+  height: 6px; border-radius: 3px; background: var(--surface-sunken);
+  margin-top: var(--s-4); overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold) 0%, #D9B36A 100%);
+  transition: width .6s var(--ease-out);
+}
+.progress-legend { margin-top: var(--s-3); }
+.progress-card .progress-track { margin-top: var(--s-5); }
+
+.lanes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+  gap: var(--s-4); margin-bottom: var(--s-5);
+}
+.lane {
+  display: block; text-decoration: none; color: inherit;
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+  transition: transform var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              border-color var(--dur-1) var(--ease);
+}
+.lane:hover {
+  transform: translateY(-2px); border-color: var(--brand-hair);
+  box-shadow: 0 12px 30px rgba(36,6,66,.10);
+}
+.lane-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-display); line-height: 1; letter-spacing: -.03em;
+  color: var(--text);
+}
+.lane-blocked .lane-n { color: var(--diff-rm); }
+.lane-h {
+  font-size: var(--fs-subhead); font-weight: var(--fw-strong);
+  letter-spacing: -.014em; margin-top: var(--s-3);
+}
+.lane-p { margin: var(--s-2) 0 0; font-size: var(--fs-small); line-height: 1.55; color: var(--text-mute); }
+.lane-go {
+  display: inline-block; margin-top: var(--s-4);
+  font-family: var(--font-display); font-weight: 500; font-size: var(--fs-caps);
+  letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--brand-text);
+}
+.lane-blocked { border-color: rgba(158,58,52,.3); background: var(--diff-rm-wash); }
+
+.nextup {
+  display: flex; flex-wrap: wrap; gap: var(--s-4);
+  align-items: center; justify-content: space-between;
+  border: var(--hair-w) solid var(--brand-hair); border-radius: var(--r-lg);
+  background: var(--brand-wash); padding: var(--s-4) var(--s-5);
+  margin-bottom: var(--s-5);
+}
+.nextup-id { font-size: var(--fs-body); margin-top: 4px; line-height: 1.5; }
+
+.section-rule {
+  display: flex; align-items: center; gap: var(--s-4);
+  margin: var(--s-7) 0 var(--s-4);
+}
+.section-rule::after {
+  content: ""; flex: 1; height: 1px; background: var(--hair);
+}
+.clearfilters { color: var(--brand-text); margin-left: auto; }
+
+/* ══════════════════════════════════════════════════════════ rule cards ══ */
+
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+
+.rulecard {
+  display: flex; gap: var(--s-5); align-items: flex-start;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); padding: var(--s-4);
+  cursor: pointer; outline: none;
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.rulecard:hover { border-color: var(--brand-hair); background: var(--surface); }
+.rulecard:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.rulecard.is-cursor { border-color: var(--brand); box-shadow: inset 3px 0 0 var(--brand); }
+.rulecard.is-blocked { border-left: 3px solid var(--diff-rm); }
+
+.rulecard-main { flex: 1; min-width: 0; }
+.rulecard-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.rulecard-clause {
+  font-size: var(--fs-subhead); font-weight: var(--fw-medium);
+  letter-spacing: -.012em; color: var(--text); text-decoration: none;
+}
+.rulecard-clause:hover { color: var(--brand-text); }
+.rulecard-text {
+  margin: var(--s-2) 0 0; font-size: var(--fs-small); line-height: 1.5;
+  color: var(--text-mute); max-width: 88ch;
+}
+.rulecard-meta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-3); }
+
+.rulecard-side {
+  display: flex; flex-direction: column; align-items: flex-end; gap: var(--s-2);
+  flex: none; min-width: 132px;
+}
+@media (max-width: 720px) {
+  .rulecard { flex-direction: column; }
+  .rulecard-side { align-items: flex-start; }
+}
+
+.pill {
+  font-family: var(--font-display); font-weight: 500; font-size: var(--fs-caps);
+  letter-spacing: var(--tr-caps); text-transform: uppercase;
+  padding: 3px 9px; border-radius: 100px;
+  border: var(--hair-w) solid var(--hair); color: var(--text-mute);
+  white-space: nowrap;
+}
+/* Who the duty falls on. Filled rather than outlined so the eye reads actor
+   first and modality second, which is the order a reviewer needs. */
+.pill-actor {
+  background: var(--surface-sunken); border-color: transparent;
+  color: var(--text-mute);
+}
+.pill-must { color: var(--text); border-color: rgba(20,20,18,.28); }
+.pill-must_not { color: var(--diff-rm); border-color: rgba(158,58,52,.3); }
+.pill-may, .pill-should { color: var(--text-mute); }
+
+.conf-wrap { display: flex; align-items: center; gap: var(--s-2); }
+.conf-bar {
+  width: 54px; height: 4px; border-radius: 2px;
+  background: var(--surface-sunken); overflow: hidden;
+}
+.conf-bar i { display: block; height: 100%; background: var(--brand); border-radius: 2px; }
+
+/* An empty state that is reporting a fact, not a failure. A new account
+   genuinely has no documents, and the page should look calm about it rather
+   than staging the absence as a problem. */
+.empty-quiet {
+  border: 1px dashed var(--line, rgba(0,0,0,.16));
+  border-radius: var(--r-lg);
+  background: transparent;
+  padding: var(--s-6);
+}
+/* No reading-measure cap, for the reason already given above .page-head: a cap
+   is right for clause text, where every word is read in sequence, and wrong for
+   explanatory copy, where it leaves a narrow column sitting off to one side of
+   a centred heading. The block inherits text-align from .empty, so with no
+   width constraint the sentence centres across the whole card the way the
+   dropzone copy above it does. */
+.empty-quiet p + p { margin-top: var(--s-3); }
+
+/* ════════════════════════════════════════════ company dashboard ══ */
+
+/* Every state on every screen has to answer "what do I do next". A page that
+   reports a situation and offers no action is where a user stops. */
+.nextstep {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-6); flex-wrap: wrap;
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5) var(--s-6);
+  margin-bottom: var(--s-5);
+}
+.nextstep-lead {
+  border-left: 3px solid var(--gold);
+  background: var(--gold-wash, rgba(195,154,78,.08));
+}
+.nextstep > div { flex: 1 1 380px; min-width: 0; }
+.nextstep-t {
+  font-size: var(--fs-small); line-height: 1.6; margin-top: var(--s-2);
+}
+.nextstep-t + .t-small { margin-top: var(--s-3); line-height: 1.6; }
+.btn-lg { padding: 11px 20px; font-size: var(--fs-small); }
+
+.cohead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--s-6); flex-wrap: wrap;
+}
+.cohead-sub { margin-top: var(--s-2); }
+.cohead-sub .badge { margin-left: var(--s-2); }
+
+.cohealth {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5) var(--s-6);
+  text-align: right; min-width: 190px;
+}
+.cohealth-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(34px, 5vw, 50px); line-height: 1; letter-spacing: -.03em;
+}
+.cohealth .t-caps { margin-top: var(--s-2); }
+.cohealth .t-micro { margin-top: var(--s-2); }
+/* The colour is the number's, not a mood. Above eighty reads as met, below
+   fifty reads as a problem, and the band between is neither. */
+.cohealth.is-good { border-left: 3px solid #3E8E41; }
+.cohealth.is-good .cohealth-n { color: #2f6f33; }
+.cohealth.is-mid { border-left: 3px solid var(--gold); }
+.cohealth.is-mid .cohealth-n { color: var(--gold-text); }
+.cohealth.is-bad { border-left: 3px solid var(--danger, #B4341F); }
+.cohealth.is-bad .cohealth-n { color: var(--danger, #B4341F); }
+
+/* The framework strip. Which rulebook, how much of it is in force, and when
+   this firm was last measured against it. Quieter than the stat cards below,
+   because it is context for them rather than a finding of its own. */
+.framebar {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--s-5); margin-top: var(--s-5);
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+.framebar-i { min-width: 0; }
+.framebar-v {
+  margin-top: var(--s-2); font-size: var(--fs-small); line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.framebar-i .t-micro { margin-top: var(--s-2); line-height: 1.5; }
+
+/* The assessment record. A run that happened, kept so it can be re-run. */
+.runrec {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-6);
+  margin-bottom: var(--s-5);
+}
+.runrec-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--s-5); flex-wrap: wrap;
+}
+.runrec-head h2 { margin-top: var(--s-2); }
+.runrec-move {
+  border: var(--border); border-radius: var(--r-sm);
+  padding: 6px 12px; font-size: var(--fs-micro); line-height: 1.4;
+}
+.runrec-move.is-good { border-color: rgba(62,142,65,.4); color: #2f6f33; }
+.runrec-move.is-bad { border-color: rgba(158,58,52,.4); color: var(--diff-rm); }
+.runrec-p { margin-top: var(--s-4); max-width: 74ch; }
+.runrec-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--s-4); margin-top: var(--s-5);
+  border-top: var(--border); padding-top: var(--s-5);
+}
+.runrec-grid > div { display: grid; gap: var(--s-2); min-width: 0; }
+.runrec-grid .t-mono { overflow-wrap: anywhere; }
+/* Six columns of dates and names will not fit a narrow window. The table
+   scrolls inside its own box rather than pushing the page sideways. */
+.tblwrap { overflow-x: auto; margin-top: var(--s-4); }
+.tblwrap > .grid { margin-top: 0; }
+
+.runrec-hist { margin-top: var(--s-5); }
+.runrec-hist + .runrec-hist { margin-top: var(--s-4); }
+.runrec-hist summary { cursor: pointer; }
+.runrec-hist .grid { margin-top: var(--s-4); }
+.runrec-hist .t-micro { margin-top: var(--s-3); }
+
+/* The ranked suggestions above the full dropdown. Visually secondary to the
+   excerpt above them, because the excerpt is the evidence and these are only
+   an ordering of a list. */
+.rvsuggest {
+  margin-top: var(--s-4); padding: var(--s-4);
+  border: var(--border); border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+}
+.rvsuggest-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: var(--s-2); }
+.rvsuggest-list li { min-width: 0; }
+.rvsuggest-list form {
+  display: flex; align-items: flex-start; gap: var(--s-4);
+  flex-wrap: wrap; padding: var(--s-3);
+  border: var(--border); border-radius: var(--r-sm);
+  background: var(--surface-raised);
+}
+.rvsuggest-list form > div { flex: 1 1 320px; min-width: 0; }
+.rvsuggest-t {
+  display: flex; gap: var(--s-3); align-items: baseline;
+  flex-wrap: wrap; font-size: var(--fs-small); line-height: 1.5;
+}
+.rvsuggest-c { flex: none; color: var(--brand); }
+.rvsuggest-why { margin-top: var(--s-2); line-height: 1.5; }
+.rvsuggest-list .btn { flex: none; align-self: center; }
+.rvsuggest > .t-micro { margin-top: var(--s-3); line-height: 1.5; }
+
+/* One gap, whole. A numbered spine with a rule down the left, so the eye reads
+   it as a sequence of events rather than eight unrelated cards. */
+.chain { list-style: none; margin: 0; padding: 0; }
+.chain-step {
+  display: flex; gap: var(--s-5); align-items: flex-start;
+  padding-bottom: var(--s-6); position: relative; min-width: 0;
+}
+.chain-step:not(:last-child)::before {
+  content: ""; position: absolute; left: 15px; top: 34px; bottom: 0;
+  width: var(--hair-w); background: var(--border-c, rgba(0,0,0,.12));
+}
+.chain-mark {
+  flex: none; z-index: 1;
+  display: grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--brand-wash); color: var(--brand);
+  font-size: var(--fs-small); font-variant-numeric: tabular-nums;
+}
+.chain-body {
+  flex: 1 1 auto; min-width: 0;
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+.chain-body h2 { margin-top: var(--s-2); }
+.chain-body p, .chain-body blockquote { margin-top: var(--s-3); line-height: 1.6; }
+.chain-facts {
+  display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5);
+  margin-top: var(--s-3);
+}
+.chain-body .sigline { margin-top: var(--s-3); word-break: break-all; }
+.chain-body .remtask-evlist { margin-top: var(--s-3); }
+
+/* Whether what you are reading is an assessment somebody took, or a preview of
+   what one would say. Two states, visibly different, because the difference is
+   the whole point of making assessment an act rather than a page view. */
+.assessbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-5); flex-wrap: wrap;
+  padding: var(--s-4) var(--s-5); margin-bottom: var(--s-4);
+  border: var(--border); border-radius: var(--r-md);
+}
+.assessbar > div { flex: 1 1 420px; min-width: 0; }
+.assessbar p { margin-top: var(--s-2); line-height: 1.6; }
+.assessbar form { flex: none; }
+.assessbar.is-recorded { background: var(--surface-sunken); }
+.assessbar.is-stale {
+  border-color: var(--gold); background: rgba(195,154,78,.07);
+}
+.assessbar.is-stale .t-caps { color: var(--gold-text, var(--text)); }
+
+/* The three setup steps, shown while a firm is still being set up and gone
+   once it is. A person who has just landed needs to know how many questions
+   there are before the product starts being useful. */
+.setupsteps {
+  list-style: none; margin: 0 0 var(--s-5); padding: 0;
+  display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5);
+}
+.setupsteps li {
+  display: flex; align-items: center; gap: var(--s-3);
+  font-size: var(--fs-small); color: var(--text-mute);
+}
+.setupsteps-n {
+  display: inline-grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: var(--hair-w) solid currentColor;
+  font-size: var(--fs-micro); font-variant-numeric: tabular-nums;
+}
+.setupsteps .is-now { color: var(--text); }
+.setupsteps .is-now .setupsteps-n {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
+.setupsteps .is-done { color: var(--text-mute); }
+.setupsteps .is-done .setupsteps-n {
+  background: var(--brand-wash); border-color: var(--brand-wash); color: var(--brand);
+}
+
+/* Which rulebooks the firm has declared it is held to. The firm owns this
+   list, which is the whole point of the screen. */
+.frameworks {
+  margin-top: var(--s-5); padding: var(--s-6);
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised);
+}
+.frameworks-head { display: flex; justify-content: space-between; gap: var(--s-5); flex-wrap: wrap; }
+.frameworks-head h2 { margin-top: var(--s-2); }
+.frameworks-p { margin-top: var(--s-4); max-width: 78ch; }
+.framepick { list-style: none; margin: var(--s-5) 0 0; padding: 0; display: grid; gap: var(--s-2); }
+.framepick li {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-4); padding: var(--s-3) var(--s-4); min-width: 0;
+  border: var(--border); border-radius: var(--r-sm);
+}
+.framepick li.is-on { border-color: var(--brand); background: var(--brand-wash); }
+.framepick label {
+  display: flex; align-items: flex-start; gap: var(--s-3);
+  cursor: pointer; min-width: 0; flex: 1 1 auto;
+}
+.framepick input { margin-top: 3px; flex: none; }
+.framepick-t { display: grid; gap: 3px; min-width: 0; }
+.framepick-n { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.framepick-n .badge { margin-left: var(--s-2); }
+.frameworks-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
+
+/* The alternatives to the recommended next action. Quiet on purpose: these
+   compete with the one thing the page is telling somebody to do, and should
+   lose that competition unless the person already knows better. */
+.orelse {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5);
+  margin-bottom: var(--s-5); padding: var(--s-4) var(--s-5);
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.orelse > a {
+  display: grid; gap: 2px; min-width: 0;
+  font-size: var(--fs-small); text-decoration: none; color: var(--text);
+}
+.orelse > a:hover { color: var(--brand); }
+.orelse > a .t-mute { font-size: var(--fs-micro); line-height: 1.4; }
+
+/* The path, written out on the empty screen. Numbered to match the masthead,
+   so the strip at the top stops being six unexplained words. */
+.whatnext {
+  list-style: none; margin: var(--s-5) 0 0; padding: var(--s-5);
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised);
+  display: grid; gap: var(--s-4);
+}
+.whatnext li {
+  display: flex; gap: var(--s-4); align-items: flex-start;
+  font-size: var(--fs-small); line-height: 1.6; min-width: 0;
+}
+.whatnext-n {
+  flex: none; display: inline-grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--brand-wash); color: var(--brand);
+  font-size: var(--fs-micro); font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+.coform {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-6);
+}
+.coform-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--s-5);
+}
+.coform-grid + .coform-grid { margin-top: var(--s-5); }
+.coform-grid label { display: grid; gap: var(--s-2); min-width: 0; }
+.coform textarea.field { resize: vertical; line-height: 1.6; }
+.coform-actions {
+  display: flex; align-items: center; gap: var(--s-5);
+  flex-wrap: wrap; margin-top: var(--s-5);
+}
+.coform-actions .t-micro { flex: 1 1 320px; line-height: 1.6; }
+
+/* ══════════════════════════════════════════════ evidence review ══ */
+
+.rvitem {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+/* Probable is worth a reviewer's time first, so it carries the accent. */
+.rvitem-probable { border-left: 3px solid var(--gold); }
+.rvitem-unresolved { border-left: 3px solid var(--line, rgba(0,0,0,.16)); }
+
+.rvitem-head {
+  display: flex; align-items: baseline; gap: var(--s-3);
+  flex-wrap: wrap; margin-bottom: var(--s-3);
+}
+.rvitem-id { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.rvitem-facts {
+  display: flex; flex-wrap: wrap; gap: var(--s-4);
+  margin-top: var(--s-3); line-height: 1.6;
+}
+.rvitem-facts .t-caps { margin-right: 4px; }
+.rvitem-why { margin-top: var(--s-2); line-height: 1.6; }
+
+.rvitem-actions {
+  display: flex; flex-wrap: wrap; gap: var(--s-5);
+  align-items: flex-end; margin-top: var(--s-4);
+}
+.rvitem-actions form {
+  display: flex; gap: var(--s-3); align-items: flex-end; flex-wrap: wrap;
+}
+.rvitem-actions label { display: grid; gap: var(--s-2); min-width: 0; }
+.rvitem-actions .field { max-width: 320px; }
+
+/* ════════════════════════════════════════════ operational mapping ══ */
+
+.chain {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+.chain-no_evidence, .chain-missing, .chain-late {
+  border-left: 3px solid var(--danger, #B4341F);
+}
+.chain-satisfied { border-left: 3px solid var(--gold); }
+
+.chain-head {
+  display: flex; align-items: baseline; gap: var(--s-3);
+  flex-wrap: wrap; margin-bottom: var(--s-3);
+}
+.chain-clause { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.chain-duty { margin-bottom: var(--s-4); line-height: 1.55; }
+
+/* The chain reads left to right and wraps as one run rather than a grid, so a
+   short chain does not leave empty cells implying missing links that were
+   never claimed. */
+.chainlinks {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 0;
+}
+.chainlink {
+  display: grid; gap: 2px;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-sunken);
+  border-radius: var(--r-sm);
+  margin: 0 var(--s-4) var(--s-2) 0;
+  position: relative;
+  font-size: var(--fs-small);
+}
+/* The arrow between links. Drawn rather than typed, so it never becomes a
+   character in copied text. */
+.chainlink:not(:last-child)::after {
+  content: ""; position: absolute; right: -14px; top: 50%;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--text-mute);
+  border-top: 1.5px solid var(--text-mute);
+  transform: translateY(-50%) rotate(45deg);
+  opacity: .6;
+}
+.chainlink-end { background: var(--brand-wash); }
+
+/* ═══════════════════════════════════════════════════ remediation ══ */
+
+.remtask {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+/* Reopened and open carry the accent; closed goes quiet. The eye should land
+   on what still needs somebody. */
+.remtask-open, .remtask-reopened { border-left: 3px solid var(--danger, #B4341F); }
+.remtask-closed { opacity: .78; }
+.remtask-ready_for_recheck { border-left: 3px solid var(--gold); }
+
+.remtask-head {
+  display: flex; align-items: baseline; gap: var(--s-3);
+  flex-wrap: wrap; margin-bottom: var(--s-3);
+}
+.remtask-id { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.remtask-clause { margin-left: auto; }
+.remtask-title { font-size: var(--fs-small); margin-bottom: var(--s-3); }
+
+.remtask-facts {
+  display: flex; flex-wrap: wrap; gap: var(--s-4);
+  margin-bottom: var(--s-3); line-height: 1.6;
+}
+.remtask-facts .t-caps { margin-right: 4px; }
+
+.remtask-result, .remtask-closed {
+  margin-top: var(--s-3); padding: var(--s-3);
+  border-radius: var(--r-sm); background: var(--surface-sunken);
+  line-height: 1.6;
+}
+
+.remtask-actions {
+  display: flex; flex-wrap: wrap; gap: var(--s-4);
+  align-items: flex-end; margin-top: var(--s-4);
+}
+.remtask-actions form { display: flex; gap: var(--s-2); align-items: center; }
+.remtask-actions .field { min-width: 0; max-width: 190px; }
+
+/* The artifacts a task points at, and the ones it could point at. Rows rather
+   than a table, because each one wraps to as many lines as its provenance
+   needs and a table column would clip that. */
+.remtask-ev {
+  margin-top: var(--s-4); padding: var(--s-4);
+  border-radius: var(--r-sm); background: var(--surface-sunken);
+}
+.remtask-evlist, .remtask-pick { list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+.remtask-evlist li, .remtask-pick li {
+  display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3);
+  align-items: baseline; padding: var(--s-2) 0; min-width: 0;
+}
+.remtask-evlist li + li, .remtask-pick li + li { border-top: var(--border); }
+.remtask-attach { margin-top: var(--s-4); }
+.remtask-attach summary { cursor: pointer; }
+.remtask-attach form { margin-top: var(--s-3); }
+.remtask-attach .btn { margin-top: var(--s-3); }
+.remtask-pick label {
+  display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3);
+  align-items: baseline; cursor: pointer; min-width: 0;
+}
+.remtask-attach .t-micro { margin-top: var(--s-3); line-height: 1.5; }
+
+.pill-high { background: rgba(180,52,31,.12); }
+.pill-medium { background: var(--surface-sunken); }
+.pill-low { background: var(--surface-sunken); opacity: .8; }
+.badge-bad { background: rgba(180,52,31,.14); color: var(--danger, #B4341F); }
+
+/* Raising a task from a gap card. */
+.gapcard-task {
+  display: flex; gap: var(--s-3); align-items: baseline;
+  flex-wrap: wrap; margin-top: var(--s-3);
+}
+.gapcard-raise { margin-top: var(--s-3); }
+.gapcard-raise > summary { cursor: pointer; color: var(--brand-text); }
+.raise-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--s-3); margin-top: var(--s-4);
+}
+.raise-grid label, .raise-action { display: grid; gap: var(--s-2); min-width: 0; }
+.raise-action { margin-top: var(--s-3); }
+.gapcard-raise .btn { margin-top: var(--s-4); }
+
+/* ═════════════════════════════════════════════ control bindings ══ */
+
+/* Who inside the firm owns a rule. Visually quieter than the certification
+   block above it, because it is a smaller claim: how one firm is organised,
+   not what the regulation says.
+
+   Padded like .actions and .history, its siblings inside the pane. Without
+   this it sat flush against the pane edge while the block below it did not,
+   and the two read as belonging to different cards. */
+.binding {
+  padding: var(--s-5); border-top: var(--border);
+}
+.binding > summary {
+  display: flex; align-items: baseline; gap: var(--s-3);
+  cursor: pointer; list-style: none;
+}
+.binding > summary::-webkit-details-marker { display: none; }
+.binding-who { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.binding-none { color: var(--text-mute); font-style: italic; }
+
+/* Four fields across the pane.
+
+   The fourth one used to sit flush against the card's right border while the
+   history block below it was comfortably inset, which read as the input being
+   cut off. The cause was the missing padding on .binding above, not the grid:
+   with no horizontal padding the tracks were laid out edge to edge across the
+   full width of the pane. The padding fixes it. The rules below keep the
+   tracks honest at narrow widths, where four columns genuinely will not fit
+   and have to wrap instead of overflowing. */
+.binding-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--s-3); margin-top: var(--s-4);
+}
+.binding-grid label { display: grid; gap: var(--s-2); min-width: 0; }
+.binding-grid .field { width: 100%; }
+.binding-actions {
+  display: flex; align-items: center; gap: var(--s-4);
+  flex-wrap: wrap; margin-top: var(--s-4);
+}
+.binding-actions .t-micro { flex: 1 1 220px; }
+
+.gapcard-owner {
+  display: flex; gap: var(--s-2); align-items: baseline;
+  margin-bottom: var(--s-3);
+}
+
+/* ══════════════════════════════════ issuance to operating rule ══ */
+
+.latency { margin-bottom: var(--s-6); }
+
+/* The milestone track needs air under it. It was sitting almost against the
+   figure cards, which made the two read as one crowded block instead of a
+   timeline and then its consequences. */
+.latency-track {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--s-5) var(--s-6); margin-bottom: var(--s-7);
+}
+.lat-step {
+  position: relative; padding-top: var(--s-4); padding-right: var(--s-4);
+  border-top: 2px solid var(--gold);
+}
+/* The issuance date is a fact about the regulation, not about the pipeline.
+   It reads quieter so the eye does not group it with the measured steps. */
+.lat-external { border-top-color: var(--line, rgba(0,0,0,.14)); }
+.lat-dot {
+  position: absolute; top: -5px; left: 0;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+}
+.lat-external .lat-dot { background: var(--text-mute); }
+.lat-label { margin-bottom: var(--s-2); }
+.lat-when { font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+
+/* Machine time and human time are different kinds of fact and now sit in
+   labelled groups. Without the split, nine hours of a reviewer being asleep
+   read as nine hours of computation. */
+.latgroup { margin-bottom: var(--s-6); }
+.latgroup:last-child { margin-bottom: 0; }
+.latgroup-label {
+  color: var(--text-mute); margin-bottom: var(--s-4);
+  padding-bottom: var(--s-2); border-bottom: var(--border);
+}
+
+.latency-figures {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--s-5);
+}
+.latfig {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-6);
+}
+.latfig-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-subhead); line-height: 1.1; letter-spacing: -.024em;
+  color: var(--gold-text); margin-bottom: var(--s-4);
+}
+.latfig .t-caps { margin-bottom: var(--s-2); }
+.latfig .t-micro { line-height: 1.6; }
+
+/* The one figure that is genuinely the product's speed. */
+.latfig-machine { border-left: 3px solid var(--gold); }
+.latfig-tag {
+  display: inline-block; margin-top: var(--s-3);
+  padding: 2px var(--s-3); border-radius: 100px;
+  background: var(--surface-sunken); color: var(--text-mute);
+}
+/* Human intervals. Quieter, because they are elapsed time and not throughput. */
+.latfig-human .latfig-n { color: var(--text); }
+
+/* The shelf time is included for honesty, not for credit. */
+.latfig-quiet { background: var(--surface-sunken); }
+.latfig-quiet .latfig-n { color: var(--text-mute); }
+
+/* ══════════════════════════════════════════════ analysis nav group ══ */
+
+/* Six cross-cutting screens behind one menu. Mirrors the document switcher
+   rather than inventing a second dropdown idiom. */
+.navgroup { position: relative; }
+.navgroup > summary {
+  list-style: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.navgroup > summary::-webkit-details-marker { display: none; }
+.navgroup-caret {
+  width: 6px; height: 6px;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: .55;
+}
+.navgroup[open] .navgroup-caret { transform: rotate(-135deg) translate(-2px, -2px); }
+
+.navgroup-menu {
+  position: absolute; z-index: var(--z-sticky); top: calc(100% + 8px); right: 0;
+  min-width: 300px; padding: var(--s-2);
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); box-shadow: 0 18px 44px rgba(36,6,66,.14);
+}
+.navgroup-item {
+  display: grid; gap: 2px; padding: var(--s-3);
+  border-radius: var(--r-sm); text-decoration: none; color: inherit;
+}
+.navgroup-item:hover { background: var(--surface-sunken); }
+.navgroup-item.is-current { background: var(--brand-wash); }
+.navgroup-item-n { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+/* One menu now holds three kinds of screen, so each kind gets a heading rather
+   than eleven links running together. */
+.navgroup-menu-wide { min-width: 340px; max-height: 76vh; overflow-y: auto; }
+.navgroup-head {
+  padding: var(--s-3) var(--s-3) var(--s-2);
+  border-top: var(--border); margin-top: var(--s-2);
+}
+.navgroup-menu-wide > .navgroup-head:first-child { border-top: 0; margin-top: 0; }
+
+/* ─────────────────────────────────────────────── the lifecycle strip ──
+   Six stages, numbered, in the order the work happens. The number is the
+   whole point: it tells somebody who has never seen this product where they
+   are in a process, which a row of six equal words cannot.
+
+   Its own band under the masthead. Sticky beneath it, so the journey stays
+   visible while a long gaps table scrolls, and scrolling sideways on a narrow
+   window rather than wrapping into a ragged second line. */
+.stagebar {
+  display: flex; align-items: center; gap: var(--s-5);
+  border-bottom: var(--border);
+  background: var(--surface-raised);
+  padding: 0 var(--s-5);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+/* The other journey, in the same bar but visibly not part of the count. A
+   divider rather than a sixth number, because reading an amendment is not the
+   step after closing a gap. */
+.stagebar-apart {
+  display: flex; align-items: center; gap: var(--s-3);
+  flex: none; margin-left: auto; padding-left: var(--s-5);
+  border-left: var(--border);
+}
+.stagebar-apart .t-micro { white-space: nowrap; }
+.lifecycle {
+  display: flex; align-items: center; gap: var(--s-2);
+  list-style: none; margin: 0; padding: var(--s-2) 0;
+  min-width: max-content;
+}
+.lifestep {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 10px; border-radius: var(--r-sm);
+  text-decoration: none; color: var(--text-mute);
+  font-size: var(--fs-small); line-height: 1; white-space: nowrap;
+}
+.lifestep-n {
+  display: inline-grid; place-items: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  border: var(--hair-w) solid currentColor;
+  font-size: 10px; font-variant-numeric: tabular-nums; opacity: .7;
+}
+.lifestep:hover { color: var(--brand); background: var(--surface-sunken); }
+.lifestep.is-current { color: var(--text); background: var(--brand-wash); }
+.lifestep.is-current .lifestep-n {
+  background: var(--brand); border-color: var(--brand); color: #fff; opacity: 1;
+}
+/* Done, so the row reads as progress rather than five equal links. Filled
+   rather than coloured, because a green tick beside "Remediation" would be a
+   compliance claim and this is only a statement about where you have been. */
+.lifestep.is-done { color: var(--text); }
+.lifestep.is-done .lifestep-n {
+  background: var(--surface-sunken); border-color: transparent;
+  color: var(--brand); opacity: 1;
+}
+
+/* The clause hash under each side of a contradiction. Long, monospaced, and
+   allowed to wrap rather than widening the card. */
+.conflict-anchor {
+  display: flex; gap: var(--s-2); align-items: baseline;
+  margin-top: var(--s-3); flex-wrap: wrap;
+}
+.conflict-anchor code {
+  word-break: break-all; font-size: 10px; opacity: .8;
+}
+
+/* ═══════════════════════════════════════════════ regulatory load ══ */
+
+.loadhero {
+  display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+@media (max-width: 860px) { .loadhero { grid-template-columns: 1fr; } }
+
+.loadhero-main {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-6);
+}
+.loadhero-actor {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-subhead); margin-top: var(--s-2);
+}
+.loadhero-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(40px, 6vw, 64px); line-height: 1; letter-spacing: -.032em;
+  color: var(--gold-text); margin-top: var(--s-4);
+}
+.loadhero-note { margin-top: var(--s-4); line-height: 1.6; }
+.loadhero-side { display: grid; gap: var(--s-4); align-content: start; }
+
+/* ═════════════════════════════════════════════════════ divergence ══ */
+
+.divrisk {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+/* The top tier carries two independent reasons and is the actionable list. */
+.divrisk-high { border-left: 3px solid var(--gold); }
+
+.divrisk-head {
+  display: flex; align-items: baseline; gap: var(--s-3);
+  flex-wrap: wrap; margin-bottom: var(--s-4);
+}
+.divrisk-score {
+  margin-left: auto; font-size: var(--fs-small); color: var(--text-mute);
+}
+
+.divsignals { list-style: none; margin: 0 0 var(--s-4); padding: 0; display: grid; gap: var(--s-2); }
+.divsignal {
+  display: flex; gap: var(--s-3); align-items: baseline;
+  padding: var(--s-2) var(--s-3); border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+}
+.divsignal-kind { flex: none; min-width: 92px; color: var(--text-mute); }
+.divsignal-contested { background: rgba(195,154,78,.12); }
+
+/* ══════════════════════════════════════════ impact assessment ══ */
+
+.draftform {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+  margin-bottom: var(--s-5);
+}
+.draftform-row {
+  display: flex; flex-wrap: wrap; gap: var(--s-4); align-items: flex-end;
+}
+.draftform-row + .draftform-row { margin-top: var(--s-4); }
+/* Flex items carry the same intrinsic minimum as grid items, so these opt out
+   for the same reason the binding fields do. */
+.draftfield { display: grid; gap: var(--s-2); flex: 1 1 260px; min-width: 0; }
+.draftfield-sm { flex: 0 1 150px; }
+.draftform-note { margin-top: var(--s-4); }
+
+/* Two more caveat tones. The base is gold, which reads as "know this". These
+   read as "be careful" and "this failed". */
+.caveats-warn {
+  border-color: var(--gold); background: rgba(195,154,78,.13);
+}
+.caveats-bad {
+  border-color: var(--danger, #B4341F); background: rgba(180,52,31,.07);
+}
+.caveats-bad p, .caveats-warn p { margin-top: var(--s-2); line-height: 1.6; }
+
+/* ═════════════════════════════════════════════════════════════ coverage ══ */
+
+/* The ladder. Three rungs, equal weight, because the story is the shape of the
+   drop between them and not any single figure. */
+.ladder {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+@media (max-width: 860px) { .ladder { grid-template-columns: 1fr; } }
+
+.rung {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+/* The middle rung is the one that gets misread, so it is the one that carries
+   the accent rather than the largest number carrying it. */
+.rung-certified { border-color: var(--gold-line, var(--gold)); }
+
+.rung-head {
+  display: flex; align-items: baseline; gap: var(--s-3);
+  flex-wrap: wrap; margin-bottom: var(--s-4);
+}
+.rung-pct {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(30px, 4vw, 42px); line-height: 1; letter-spacing: -.03em;
+  color: var(--gold-text);
+}
+.rung-label { color: var(--text-mute); }
+.rung .progress-track { margin-top: 0; }
+.rung-frac { margin-top: var(--s-3); line-height: 1.5; }
+.rung-limit { margin-top: var(--s-2); line-height: 1.5; }
+
+.ladder-note {
+  border: var(--border); border-left: 3px solid var(--gold);
+  border-radius: var(--r-md); background: var(--surface-raised);
+  padding: var(--s-5); margin-bottom: var(--s-5);
+}
+.ladder-note p { line-height: 1.6; }
+.ladder-note p + p { margin-top: var(--s-3); }
+
+.cov-hero {
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+@media (max-width: 860px) { .cov-hero { grid-template-columns: 1fr; } }
+
+.cov-dial {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-6);
+}
+.cov-pct {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: clamp(40px, 6vw, 64px); line-height: 1; letter-spacing: -.032em;
+  color: var(--gold-text);
+}
+.cov-frac { margin-top: var(--s-4); line-height: 1.55; }
+
+.cov-side { display: grid; gap: var(--s-4); align-content: start; }
+.cov-stat {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+.cov-stat-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-title); letter-spacing: -.026em; line-height: 1.1;
+}
+
+.minibar {
+  display: inline-block; width: 84px; height: 4px; border-radius: 2px;
+  background: var(--surface-sunken); overflow: hidden; margin-right: var(--s-2);
+  vertical-align: middle;
+}
+.minibar i { display: block; height: 100%; background: var(--gold); border-radius: 2px; }
+
+details.definition { padding: 0; }
+details.definition summary {
+  display: flex; align-items: center; gap: var(--s-4);
+  padding: var(--s-4) var(--s-5); cursor: pointer; list-style: none;
+}
+details.definition summary::-webkit-details-marker { display: none; }
+details.definition summary::after {
+  content: "+"; margin-left: auto; font-family: var(--font-mono);
+  color: var(--text-mute);
+}
+details.definition[open] summary::after { content: "\2212"; }
+.definition-body { padding: 0 var(--s-5) var(--s-5); }
+
+/* Each metric written as a real fraction. The rule between the two lines is
+   the division, so there is nothing to read and decode. */
+.formulas {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--s-4); margin-bottom: var(--s-5);
+}
+.formula {
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-sunken); padding: var(--s-4) var(--s-5);
+}
+.formula-name {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-caps); letter-spacing: var(--tr-caps);
+  text-transform: uppercase; color: var(--brand-text);
+  margin-bottom: var(--s-3);
+}
+.formula-frac { text-align: center; }
+.formula-top, .formula-bot {
+  font-size: var(--fs-small); line-height: 1.45; color: var(--text);
+  padding: var(--s-2) 0;
+}
+.formula-top { border-bottom: var(--hair-w) solid var(--text-mute); }
+.formula-bot { color: var(--text-mute); }
+
+/* The denominator arithmetic, one figure at a time. */
+.denom-grid {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--s-4); margin-bottom: var(--s-5);
+}
+.denom-item {
+  flex: 1 1 200px;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); padding: var(--s-4);
+  text-align: center;
+}
+.denom-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-head); line-height: 1.1; letter-spacing: -.024em;
+}
+/* The answer is the figure the whole page divides by, so it is marked. */
+.denom-item.is-answer {
+  border-color: var(--brand-hair); background: var(--brand-wash);
+}
+.denom-item.is-answer .denom-n { color: var(--brand-text); }
+.denom-item .t-caps { margin-top: var(--s-2); }
+.denom-item .t-micro { margin-top: var(--s-1); }
+.denom-op {
+  flex: none; color: var(--text-mute); font-size: var(--fs-small);
+  font-style: italic;
+}
+@media (max-width: 720px) { .denom-op { display: none; } }
+
+/* ════════════════════════════════════════════════════════════════ audit ══ */
+
+.audit-bar {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--s-4); align-items: stretch;
+  padding: 0; border: 0; background: none; margin-bottom: var(--s-5);
+}
+.audit-status, .audit-meta, .audit-action {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+.audit-status.is-good { border-color: rgba(24,107,72,.32); background: var(--diff-add-wash); }
+.audit-status.is-bad  { border-color: rgba(158,58,52,.34); background: var(--diff-rm-wash); }
+.audit-status-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-title); line-height: 1.1; letter-spacing: -.026em;
+  margin: var(--s-2) 0 var(--s-1);
+}
+.audit-status.is-good .audit-status-n { color: var(--diff-add); }
+.audit-status.is-bad  .audit-status-n { color: var(--diff-rm); }
+.audit-action { display: grid; gap: var(--s-3); align-content: center; justify-items: start; }
+.audit-action .btn { width: 100%; }
+.audit-meta { display: grid; align-content: center; }
+
+.auditcard {
+  display: flex; gap: var(--s-5); align-items: flex-start;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); padding: var(--s-4);
+}
+.auditcard-l { flex: none; width: 148px; display: grid; gap: var(--s-2); justify-items: start; }
+.auditcard-m { flex: 1; min-width: 0; display: grid; gap: var(--s-2); }
+.auditcard-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); }
+.auditnote { border-left: 2px solid var(--hair); padding-left: var(--s-3); }
+.changes { display: grid; gap: 3px; }
+.sigline { color: var(--text-mute); }
+@media (max-width: 720px) { .auditcard { flex-direction: column; } .auditcard-l { width: auto; } }
+
+/* ---------------------------------------------------------------- empty -- */
+
+/* ═════════════════════════════════════════════════════════════ errors ══ */
+
+.errwrap { max-width: 560px; margin: var(--s-8) auto; text-align: center; }
+.errcode {
+  font-size: var(--fs-display); line-height: 1; color: var(--hair);
+  font-variant-numeric: tabular-nums;
+}
+.errhead { margin: var(--s-4) 0 var(--s-3); }
+.errdetail { margin: 0 auto; max-width: 52ch; line-height: 1.6; }
+.errgo {
+  display: flex; flex-wrap: wrap; gap: var(--s-3);
+  justify-content: center; margin-top: var(--s-6);
+}
+.errnote { margin: var(--s-6) auto 0; max-width: 52ch; line-height: 1.6; }
+
+/* ═══════════════════════════════════════════════════════════ accounts ══ */
+
+.authwrap { display: flex; justify-content: center; padding: var(--s-7) 0; }
+.authcard {
+  width: 100%; max-width: 420px;
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-6);
+}
+.authlede { margin: var(--s-3) 0 var(--s-5); line-height: 1.6; }
+.authform { display: grid; gap: var(--s-4); }
+.authfield { display: grid; gap: var(--s-2); }
+.authfield .field { width: 100%; padding: 9px 11px; }
+/* .btn is an inline-flex, so a full-width one leaves its label at the left
+   edge. text-align does nothing to a flex container; justify-content is what
+   centres the contents. */
+.authgo { width: 100%; margin-top: var(--s-2); }
+.autherr {
+  border: var(--hair-w) solid rgba(158,58,52,.34); border-radius: var(--r-sm);
+  background: var(--diff-rm-wash); color: var(--diff-rm);
+  padding: var(--s-3) var(--s-4); margin-bottom: var(--s-4);
+  font-size: var(--fs-small); line-height: 1.5;
+}
+.authswap { margin: var(--s-5) 0 0; }
+.authswap a, .authnote a { color: var(--brand-text); }
+.authnote {
+  margin: var(--s-4) 0 0; padding-top: var(--s-4);
+  border-top: var(--border); line-height: 1.5;
+}
+/* The account control. A single initial in a circle, with the full identity a
+   click away, so the masthead spends 32px on this rather than the width of a
+   name that could be anything. */
+.account { position: relative; flex: none; }
+.account > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center;
+}
+.account > summary::-webkit-details-marker { display: none; }
+.account > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 100px; }
+
+.avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex: none;
+  border-radius: 100px;
+  background: var(--brand-solid); color: #fff;
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-small); line-height: 1;
+  /* The letter's own optical centre sits slightly above the box centre. */
+  padding-top: 1px;
+  user-select: none;
+  transition: box-shadow var(--dur-1) var(--ease);
+}
+.account > summary:hover .avatar { box-shadow: 0 0 0 3px var(--brand-wash); }
+.account[open] > summary .avatar { box-shadow: 0 0 0 3px var(--brand-hair); }
+.avatar-lg { width: 44px; height: 44px; font-size: var(--fs-subhead); }
+
+.account-menu {
+  position: absolute; z-index: var(--z-sticky);
+  top: calc(100% + 10px); right: 0; min-width: 268px;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised);
+  box-shadow: 0 18px 44px rgba(36,6,66,.16);
+  padding: var(--s-5);
+}
+.account-who { display: flex; align-items: center; gap: var(--s-4); }
+.account-who-t { min-width: 0; }
+.account-name {
+  font-size: var(--fs-small); font-weight: var(--fw-medium);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.account-who-t .t-micro { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-note {
+  margin: var(--s-4) 0; padding-top: var(--s-4);
+  border-top: var(--border); line-height: 1.5;
+}
+.account-out { width: 100%; }
+
+/* ═══════════════════════════════════════════════════════════════ gaps ══ */
+
+.gapbar {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--s-4); margin-bottom: var(--s-4);
+}
+.gapstat {
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+.gapstat-bad { border-color: rgba(158,58,52,.34); background: var(--diff-rm-wash); }
+.gapstat-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-title); line-height: 1.1; letter-spacing: -.026em;
+}
+.gapstat-bad .gapstat-n { color: var(--diff-rm); }
+.gapstat .t-caps { margin-top: var(--s-2); }
+.gapstat .t-micro { margin-top: var(--s-2); line-height: 1.5; }
+
+/* Every caveat that has to travel with the numbers above it. */
+.caveats {
+  border: var(--hair-w) solid var(--gold); border-radius: var(--r-md);
+  background: rgba(195,154,78,.07); padding: var(--s-4) var(--s-5);
+  margin-bottom: var(--s-4);
+}
+.caveats ul { margin: var(--s-3) 0 0; padding-left: var(--s-5); }
+.caveats li { margin-bottom: var(--s-2); line-height: 1.55; }
+
+/* Importing a firm's own filing records: the way out of the caveat above it. */
+.evidencebar {
+  display: flex; flex-wrap: wrap; gap: var(--s-5);
+  align-items: center; justify-content: space-between;
+  border: var(--hair-w) solid var(--brand-hair); border-radius: var(--r-lg);
+  background: var(--brand-wash); padding: var(--s-5) var(--s-6);
+  margin-bottom: var(--s-4);
+}
+.evidencebar-msg { flex: 1 1 380px; }
+.evidencebar-msg p { margin: var(--s-2) 0 0; line-height: 1.6; }
+.evidencebar-msg a { color: var(--brand-text); }
+.evidencebar-actions { flex: none; display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+/* Rejected rows are listed one per line, so the newlines have to survive. */
+.evidencebar .dropzone-status { white-space: pre-wrap; text-align: left; }
+
+.gapcard {
+  display: flex; gap: var(--s-5); align-items: flex-start;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); padding: var(--s-4) var(--s-5);
+}
+.gapcard-missing { border-left: 3px solid var(--diff-rm); }
+.gapcard-late { border-left: 3px solid var(--gold); }
+.gapcard-l { flex: none; width: 116px; display: grid; gap: var(--s-2); justify-items: start; }
+.gapcard-m { flex: 1; min-width: 0; }
+.gapcard-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-4); }
+.gapcard-clause {
+  font-size: var(--fs-body); font-weight: var(--fw-medium);
+  color: var(--text); text-decoration: none;
+}
+.gapcard-clause:hover { color: var(--brand-text); }
+.gapcard-req {
+  margin: var(--s-2) 0 var(--s-3); font-size: var(--fs-small);
+  color: var(--text-mute); line-height: 1.5;
+}
+.gapcard-dates { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: baseline; }
+
+/* The citation. Collapsed by default so the list stays scannable, because the
+   proof matters most at the moment somebody disputes a finding. */
+details.cite { margin-top: var(--s-3); }
+details.cite summary {
+  cursor: pointer; color: var(--brand-text); list-style: none;
+  display: inline-flex; align-items: center; gap: var(--s-2);
+}
+details.cite summary::-webkit-details-marker { display: none; }
+details.cite summary::before { content: "+"; font-family: var(--font-mono); }
+details.cite[open] summary::before { content: "\2212"; }
+.cite-verbatim {
+  margin: var(--s-3) 0; padding: var(--s-3) var(--s-4);
+  border-left: 2px solid var(--brand-hair); background: var(--surface-sunken);
+  font-size: var(--fs-small); line-height: 1.6; color: var(--text);
+}
+.cite-meta { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+.cite-sig { margin-top: var(--s-2); color: var(--text-mute); }
+
+@media (max-width: 720px) {
+  .gapcard { flex-direction: column; }
+  .gapcard-l { width: auto; }
+}
+
+/* ════════════════════════════════════════════════════════════ conflicts ══ */
+
+.conflict {
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); padding: var(--s-5);
+}
+.conflict-modality { border-left: 3px solid var(--diff-rm); }
+.conflict-deadline { border-left: 3px solid var(--gold); }
+.conflict-day_count { border-left: 3px solid var(--brand); }
+.conflict-duplicate { border-left: 3px solid var(--hair); }
+
+.conflict-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+/* The question is the point of the card, so it leads at reading size. */
+.conflict-q {
+  margin: 0 0 var(--s-5); font-size: var(--fs-body); line-height: 1.6;
+  max-width: 90ch;
+}
+
+/* The two clauses side by side, because the whole argument is the comparison. */
+.conflict-pair {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--s-4);
+}
+.conflict-side {
+  border: var(--border); border-radius: var(--r-sm);
+  background: var(--surface); padding: var(--s-4);
+}
+.conflict-side-top {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+.conflict-rule { line-height: 1.6; }
+.conflict-days {
+  display: inline-block; margin-left: var(--s-2);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-sunken); border-radius: 100px;
+  padding: 2px 9px; font-size: var(--fs-micro); color: var(--text-mute);
+}
+.conflict-side .cite-verbatim { margin: var(--s-3) 0 0; font-size: var(--fs-micro); }
+
+/* ═══════════════════════════════════════════════ bring your own document ══ */
+
+/* The document switcher. Every screen belongs to one document, and the person
+   using it must never be in doubt about which. */
+/* The firm, on the firm's own screens. It leads, and the rulebook follows it
+   as the thing the firm is being measured against. Baselines aligned with the
+   switcher beside it, the same way the switcher aligns its own two words. */
+.firmpick {
+  flex: none; display: flex; align-items: baseline; gap: var(--s-3);
+  padding: 6px 2px; min-width: 0;
+}
+.firmpick-name {
+  font-size: var(--fs-small); font-weight: var(--fw-medium);
+  color: var(--text); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 26ch;
+}
+.firmpick-name:hover { color: var(--brand); }
+/* Secondary to the firm, so it is quieter than when it leads. */
+.docpick-second .docpick-d summary { background: transparent; }
+
+.docpick { flex: none; position: relative; }
+/* The caps label is 11px and the document name is 13px. Centring their boxes
+   leaves the smaller one riding high, which is what put the two words on
+   different lines. Their baselines are what the eye actually reads along, so
+   align those and let the chevron centre itself. */
+.docpick-d summary {
+  display: flex; align-items: baseline; gap: var(--s-3);
+  padding: 6px 12px 6px 10px; cursor: pointer; list-style: none;
+  border: var(--border); border-radius: 100px; background: var(--surface);
+  transition: border-color var(--dur-1) var(--ease);
+}
+.docpick-d summary::-webkit-details-marker { display: none; }
+.docpick-d summary:hover { border-color: var(--brand-hair); }
+/* A box with no text has no useful baseline, so it opts out and centres. */
+.docpick-d summary::after {
+  content: ""; width: 7px; height: 7px; margin-left: var(--s-1);
+  align-self: center;
+  border-right: 1.5px solid var(--text-mute); border-bottom: 1.5px solid var(--text-mute);
+  transform: rotate(45deg) translate(-2px, -2px);
+}
+.docpick-label { flex: none; }
+.docpick-name {
+  font-size: var(--fs-small); font-weight: var(--fw-medium);
+  max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.docpick-menu {
+  position: absolute; z-index: var(--z-sticky); top: calc(100% + 6px); left: 0;
+  min-width: 320px; max-height: 60vh; overflow-y: auto;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); box-shadow: 0 18px 44px rgba(36,6,66,.14);
+  padding: var(--s-2);
+}
+.docpick-item {
+  display: grid; gap: 2px; padding: var(--s-3);
+  border-radius: var(--r-sm); text-decoration: none; color: inherit;
+}
+.docpick-item:hover { background: var(--surface-sunken); }
+.docpick-item.is-current { background: var(--brand-wash); }
+.docpick-item-n { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.docpick-add {
+  display: block; margin-top: var(--s-2); padding: var(--s-3);
+  border-top: var(--border); text-decoration: none;
+  color: var(--brand-text); font-size: var(--fs-small);
+}
+
+
+/* The drop target. */
+.dropzone {
+  border: 2px dashed var(--hair); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-8) var(--s-6);
+  text-align: center; margin-bottom: var(--s-4);
+  transition: border-color var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+}
+.dropzone-in { max-width: 52ch; margin: 0 auto; }
+.dropzone.is-over { border-color: var(--brand-solid); background: var(--brand-wash); }
+.dropzone.is-busy { opacity: .7; pointer-events: none; }
+.dropzone-mark { color: var(--brand-text); margin-bottom: var(--s-4); }
+.dropzone-h { margin: 0 0 var(--s-3); }
+.dropzone-p { margin: 0; font-size: var(--fs-small); line-height: 1.6; }
+
+/* The buttons are a separate step from the sentence explaining them, so they
+   get a clear break rather than sitting on the last line of the paragraph. */
+.dropzone-cta {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: var(--s-3); margin-top: var(--s-5);
+}
+.linkbtn {
+  font: inherit; color: var(--brand-text); background: none; border: 0;
+  padding: 0; cursor: pointer; text-decoration: underline;
+}
+.dropzone-status { margin-top: var(--s-4); font-size: var(--fs-small); }
+.dropzone-status.is-bad { color: var(--diff-rm); }
+.dropzone-status.is-good { color: var(--diff-add); }
+.dropzone-status.is-busy { color: var(--text-mute); }
+.upload-note { margin: 0 0 var(--s-4); line-height: 1.6; }
+
+.doccard {
+  display: flex; gap: var(--s-5); align-items: center;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); padding: var(--s-4) var(--s-5);
+}
+.doccard.is-builtin { background: var(--surface-sunken); }
+.doccard-main { flex: 1; min-width: 0; }
+.doccard-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); }
+.doccard-name {
+  font-size: var(--fs-subhead); font-weight: var(--fw-strong);
+  letter-spacing: -.012em; color: var(--text); text-decoration: none;
+}
+.doccard-name:hover { color: var(--brand-text); }
+.doccard-meta { display: flex; flex-wrap: wrap; gap: var(--s-4); margin-top: var(--s-2); }
+.doccard-side { flex: none; display: flex; gap: var(--s-2); align-items: center; }
+.badge-quiet { background: none; border: var(--border); color: var(--text-mute); }
+@media (max-width: 720px) {
+  .doccard { flex-direction: column; align-items: flex-start; }
+}
+
+/* The verdict on a parsed document. This is the panel allowed to say no. */
+.verdict {
+  display: flex; flex-wrap: wrap; gap: var(--s-6); align-items: center;
+  justify-content: space-between;
+  border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised); padding: var(--s-5) var(--s-6);
+  margin-bottom: var(--s-4);
+}
+.verdict-l { flex: 1 1 320px; max-width: 60ch; }
+.verdict-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-title); line-height: 1.1; letter-spacing: -.026em;
+  margin: var(--s-2) 0 var(--s-2);
+}
+.verdict-readable { border-color: rgba(24,107,72,.32); background: var(--diff-add-wash); }
+.verdict-readable .verdict-n { color: var(--diff-add); }
+.verdict-partial { border-color: var(--gold); background: rgba(195,154,78,.08); }
+.verdict-partial .verdict-n { color: var(--gold-text); }
+.verdict-unreadable { border-color: rgba(158,58,52,.34); background: var(--diff-rm-wash); }
+.verdict-unreadable .verdict-n { color: var(--diff-rm); }
+
+.verdict-figures {
+  flex: none; display: flex; flex-wrap: wrap; gap: var(--s-6); text-align: center;
+}
+.vfig-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-head); line-height: 1.1; letter-spacing: -.024em;
+}
+.vfig .t-caps { margin-top: var(--s-2); }
+
+.compilebar {
+  display: flex; flex-wrap: wrap; gap: var(--s-5);
+  align-items: center; justify-content: space-between;
+  border: var(--hair-w) solid var(--brand-hair); border-radius: var(--r-lg);
+  background: var(--brand-wash); padding: var(--s-5) var(--s-6);
+  margin-bottom: var(--s-4);
+}
+.compilebar-msg { flex: 1 1 340px; max-width: 62ch; }
+.compilebar-msg p { margin: var(--s-2) 0 0; }
+.compilebar .progress-track { margin-top: var(--s-3); }
+.compile-n {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--fs-subhead); margin-top: var(--s-2);
+}
+.compile-form { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.compile-form label { display: flex; align-items: center; gap: var(--s-3); color: var(--text-mute); }
+.compile-form select.field { min-width: 210px; }
+
+/* One statement per thing that happened during the parse. */
+.concerns { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
+.concern {
+  display: flex; gap: var(--s-5); align-items: center;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); padding: var(--s-4) var(--s-5);
+}
+/* The level sits centred against its own card rather than pinned to the top
+   corner, so a one-line note and a four-line blocker read the same way. */
+.concern-tag {
+  flex: none; width: 88px; text-align: center;
+}
+.concern-blocker { border-color: rgba(158,58,52,.34); background: var(--diff-rm-wash); }
+.concern-blocker .concern-tag { color: var(--diff-rm); }
+.concern-warning .concern-tag { color: var(--gold-text); }
+.concern-note .concern-tag { color: var(--text-mute); }
+.concern-body { flex: 1; min-width: 0; }
+.concern-h {
+  font-size: var(--fs-body); font-weight: var(--fw-medium);
+  letter-spacing: -.008em; margin-bottom: var(--s-2);
+}
+.concern-count {
+  font-variant-numeric: tabular-nums; font-size: var(--fs-micro);
+  background: var(--surface-sunken); border-radius: 100px; padding: 2px 8px;
+  color: var(--text-mute); margin-left: var(--s-2);
+}
+.concern-body p { margin: 0; line-height: 1.6; }
+@media (max-width: 720px) {
+  .concern { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+  .concern-tag { width: auto; text-align: left; }
+}
+
+.provnote { margin: var(--s-4) 0 var(--s-5); line-height: 1.6; }
+
+/* The facts page. Read live, so it says when. */
+.factsnote {
+  border: var(--hair-w) solid var(--brand-hair); border-radius: var(--r-md);
+  background: var(--brand-wash); padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4); line-height: 1.55;
+}
+
+.empty {
+  border: var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-7);
+  text-align: center;
+  background: var(--surface-raised);
+  color: var(--text-mute);
+}
+.empty .t-subhead { color: var(--text); margin: 0 0 var(--s-2); }
+.empty .verbatim { text-align: left; max-height: 40vh; }
+
+/* The reproducibility facts under an assessment of record. Small, because they
+   are for the person checking the claim rather than the person reading it. */
+.assessbar-facts {
+  display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5);
+  margin-top: var(--s-3);
+}
+.assessbar-facts .t-caps { margin-right: 4px; }
+
+/* ─────────────────────────────────────────────────────────── setting up ──
+   Step three, which is a screen now rather than a line on the dashboard. */
+.lifestep-mode { padding: 0 var(--s-3) 0 0; white-space: nowrap; }
+.setup-aside { margin-top: var(--s-5); max-width: 74ch; }
+.setup-examples {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s-5); margin: var(--s-5) 0;
+  padding: var(--s-5); border: var(--border); border-radius: var(--r-lg);
+  background: var(--surface-raised);
+}
+.setup-examples ul { margin: var(--s-3) 0 0; padding-left: var(--s-5); }
+.setup-examples li { margin-bottom: var(--s-2); line-height: 1.5; }
+.setup-examples p { margin-top: var(--s-3); line-height: 1.6; }
+
+/* Why a finding cannot be acted on yet. Shown in place of the control rather
+   than as a disabled control, because a disabled button invites clicking. */
+.gapcard-blocked {
+  margin-top: var(--s-3); padding: var(--s-3);
+  border-radius: var(--r-sm); background: var(--surface-sunken);
+  line-height: 1.55;
+}
+
+/* ─────────────────────────────────── what an amendment means for a firm ──
+   Grouped by process rather than by clause number, because the work is
+   assigned by team and a list ordered by the circular cannot be handed out. */
+.changegroup { margin-top: var(--s-5); }
+.changegroup-head {
+  display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap;
+  padding-bottom: var(--s-3); border-bottom: var(--border);
+}
+.changegroup-n { font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.changelist { list-style: none; margin: 0; padding: 0; }
+.changeitem {
+  padding: var(--s-4) 0; border-bottom: var(--border); min-width: 0;
+}
+.changeitem:last-child { border-bottom: 0; }
+.changeitem-head {
+  display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap;
+}
+/* A lost signature is the only one of these that stops a rule running. */
+.changeitem-recertify .pill { background: rgba(180,52,31,.12); color: var(--danger, #B4341F); }
+.changeitem-withdraw .pill { background: var(--surface-sunken); }
+.changeitem-req { margin-top: var(--s-3); font-size: var(--fs-small); font-weight: var(--fw-medium); }
+.changeitem p { margin-top: var(--s-2); line-height: 1.6; }
+.changeitem-facts {
+  display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin-top: var(--s-3);
+}
+.changeitem-do {
+  margin-top: var(--s-3);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3);
+}
+/* Raising the work is a form, so it has to sit on the row without looking
+   like a data-entry panel dropped into a list of findings. */
+.inline-form { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.field-inline { width: 14ch; padding: var(--s-2) var(--s-3); font-size: var(--fs-micro); }

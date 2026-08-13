@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Error {{ code }}{% endblock %}
+
+{% block content %}
+<div class="errwrap">
+  <div class="errcode t-mono">{{ code }}</div>
+  <h1 class="t-head errhead">{{ headline }}</h1>
+  <p class="t-mute errdetail">{{ detail }}</p>
+
+  <div class="errgo">
+    <a class="btn btn-solid" href="/w/demo/company">My firm</a>
+    <a class="btn" href="/w/demo">The worked example</a>
+  </div>
+
+  {% if code == 500 %}
+  <p class="t-micro t-mute errnote">
+    Nothing was written. The store is only ever replaced in one step, so a
+    request that failed part way through leaves the previous rulebook and the
+    audit chain exactly as they were.
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

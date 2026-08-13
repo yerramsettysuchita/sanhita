@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Facts{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">Every number we claim</h1>
+  <p class="t-mute">
+    Nothing on this page is typed in. Every figure is read from the parse, the
+    store or the test suite at the moment you load it, and each one names the
+    command that reproduces it. If a slide and this page disagree, this page is
+    right.
+  </p>
+</div>
+
+{# The single most confusing thing about this page was that it never said which
+   document it was about, so anyone who had just uploaded their own circular
+   reasonably assumed these were its numbers. They are not, and never will be:
+   these are the claims the submission makes, and the submission is about one
+   document. #}
+<div class="factsnote t-small">
+  <strong>These are the numbers for the worked example,
+  {{ document_name }}, whatever else you have open.</strong>
+  They are the figures this project claims, so they always describe the same
+  document rather than whichever circular you last uploaded. To see the numbers
+  for your own document, open it and use its Coverage and Document screens.
+</div>
+
+<div class="factsnote t-small">
+  Read at {{ generated_at.strftime('%d %b %Y, %H:%M') }} UTC.
+  The parse is deterministic, so these are the same for anyone running the same
+  document.
+</div>
+
+{% for title, rows in groups %}
+<div class="section-rule"><span class="t-caps t-mute">{{ title }}</span></div>
+<table class="grid">
+  <colgroup><col style="width:38%"><col style="width:30%"><col style="width:32%"></colgroup>
+  <thead><tr><th>What</th><th>Value</th><th>How to check it</th></tr></thead>
+  <tbody>
+    {% for label, value, how in rows %}
+    <tr>
+      <td>{{ label }}</td>
+      <td class="{{ 't-code' if value|length > 40 else 't-mono' }}">{{ value }}</td>
+      <td class="t-small t-mute">{{ how }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+
+<div class="section-rule"><span class="t-caps t-mute">What is not built, and what is not proven</span></div>
+<p class="t-small t-mute" style="margin-bottom:var(--s-4)">
+  On the same page as the good numbers, because a limitation you have to go
+  looking for is a limitation you are hiding.
+</p>
+
+<ul class="concerns">
+  {% for title, detail in limits %}
+  <li class="concern concern-note">
+    <div class="concern-tag t-caps">Limit</div>
+    <div class="concern-body">
+      <div class="concern-h">{{ title }}</div>
+      <p class="t-small t-mute">{{ detail }}</p>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

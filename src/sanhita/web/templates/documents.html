@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - SEBI Rulebooks{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">SEBI rulebooks</h1>
+  <p class="t-mute">
+    Every document you bring gets its own rulebook, its own certifications and
+    its own audit chain. Nothing crosses between them, and nothing you upload is
+    visible to anybody else.
+  </p>
+</div>
+
+{% if error %}
+<div class="blocker"><div class="t-caps">Upload refused</div><p>{{ error }}</p></div>
+{% endif %}
+
+{% if not user %}
+  <!-- Say it before they drag a file onto something that will refuse it. -->
+  <div class="dropzone is-locked">
+    <div class="dropzone-in">
+      <div class="dropzone-mark" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="11" width="16" height="9" rx="2"/>
+          <path d="M8 11V7a4 4 0 018 0v4"/>
+        </svg>
+      </div>
+      <div class="dropzone-h t-subhead">Sign in to bring your own circular</div>
+      <p class="dropzone-p t-mute">
+        The documents you upload and the certifications made against them are
+        confidential, so they are kept under a named person. The worked example
+        below opens without an account.
+      </p>
+      <div class="dropzone-cta">
+        <a class="btn btn-solid" href="/signup">Create an account</a>
+        <a class="btn" href="/signin">Sign in</a>
+      </div>
+    </div>
+  </div>
+{% else %}
+<!-- The drop target. Raw bytes go straight to the server, so no upload library
+     and no third party is involved at any point. -->
+<form class="dropzone" id="drop" method="post" action="/documents/upload">
+  <div class="dropzone-in">
+    <div class="dropzone-mark" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2"/>
+      </svg>
+    </div>
+    <div class="dropzone-h t-subhead">Drop a SEBI circular here</div>
+    <p class="dropzone-p t-mute">
+      Or <button type="button" class="linkbtn" id="pick">choose a file</button>.
+      PDF only, up to {{ max_mb }} MB. The file stays on this machine.
+    </p>
+    <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+    <div class="dropzone-status" id="status" role="status" aria-live="polite" hidden></div>
+  </div>
+</form>
+{% endif %}
+
+<p class="t-small t-mute upload-note">
+  Sanhita needs the regulator's own PDF, not text pasted into a box. Every rule
+  it makes has to point back to a page in the document SEBI actually published,
+  so you can always check it against the original. If Sanhita cannot read your
+  document properly, the next screen will tell you straight away. It will not
+  hand you a rulebook that looks right and is not.
+</p>
+
+{# One card, written once, used by both sections. #}
+{% macro doccard(d) %}
+  <li class="doccard {{ 'is-builtin' if d.ws.builtin }}">
+    <div class="doccard-main">
+      <div class="doccard-top">
+        <a class="doccard-name" href="/w/{{ d.ws.id }}">{{ d.ws.name }}</a>
+        {% if d.ws.builtin %}<span class="badge badge-quiet">Worked example</span>{% endif %}
+        {% if d.job and d.job.state == 'running' %}
+          <span class="badge">Compiling, {{ d.job.percent }}%</span>
+        {% endif %}
+      </div>
+      <div class="doccard-meta t-micro t-mute">
+        <span>{{ d.ws.source_name }}</span>
+        {% if d.size_kb %}<span>{{ d.size_kb }} KB</span>{% endif %}
+        {% if not d.ws.builtin %}<span class="t-code">{{ d.ws.short_hash }}</span>{% endif %}
+        <span>added {{ d.ws.created_at.strftime('%d %b %Y') }}</span>
+      </div>
+      {% if d.missing %}
+        <p class="t-small warn">The source PDF for this document is missing from disk.</p>
+      {% endif %}
+    </div>
+    <div class="doccard-side">
+      <a class="btn" href="/w/{{ d.ws.id }}">Open</a>
+      {% if not d.ws.builtin %}
+      <form method="post" action="/w/{{ d.ws.id }}/delete"
+            onsubmit="return confirm('Delete this document and every rule certified against it? This removes its rulebook, its certifications and its audit chain. It cannot be undone.')">
+        <button class="btn btn-quiet">Delete</button>
+      </form>
+      {% endif %}
+    </div>
+  </li>
+{% endmacro %}
+
+{# The user's own space comes first, because on a signed-in account it is the
+   part that is actually theirs, and it is honestly empty until they upload
+   something. #}
+{% if user %}
+<div class="section-rule"><span class="t-caps t-mute">Your rulebooks</span></div>
+
+{% if mine %}
+  <ul class="cards">{% for d in mine %}{{ doccard(d) }}{% endfor %}</ul>
+{% else %}
+  <div class="empty empty-quiet">
+    <p class="t-subhead">You have not uploaded anything yet.</p>
+    <p class="t-mute">
+      Drop a circular above and it becomes yours alone. Nobody else can open it.
+      It gets its own set of rules, its own approvals and its own history, and
+      none of that mixes with any other document. The worked example below shows
+      you how all of this works before you upload anything.
+    </p>
+  </div>
+{% endif %}
+{% endif %}
+
+{# The example is nobody's. It is here so a first-time visitor, and anyone
+   evaluating this, has something real to open before uploading anything. #}
+<div class="section-rule">
+  <span class="t-caps t-mute">Worked example, open to everyone</span>
+</div>
+
+<p class="t-small t-mute" style="margin-bottom:var(--s-4)">
+  This is a real SEBI circular for stock brokers. It has already been read and
+  turned into rules, and some of those rules have been approved. It belongs to
+  no account and cannot be deleted, because every other screen here is built
+  from it. Open it to see what Sanhita does.
+</p>
+
+<ul class="cards">{% for d in example %}{{ doccard(d) }}{% endfor %}</ul>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  var drop = document.getElementById("drop");
+  var input = document.getElementById("file");
+  var pick = document.getElementById("pick");
+  var status = document.getElementById("status");
+  if (!drop) return;
+
+  function say(message, kind) {
+    status.hidden = false;
+    status.textContent = message;
+    status.className = "dropzone-status" + (kind ? " is-" + kind : "");
+  }
+
+  /* The file is sent as the raw request body with its name in a header. No
+     multipart, so the server needs no extra library to accept it. */
+  function send(file) {
+    if (!file) return;
+    if (file.type && file.type.indexOf("pdf") === -1) {
+      say("That is not a PDF. Sanhita reads the regulator's published PDF.", "bad");
+      return;
+    }
+    drop.classList.add("is-busy");
+    say("Reading " + file.name + ". Large circulars take a few seconds.", "busy");
+
+    fetch("/documents/upload", {
+      method: "POST",
+      headers: { "content-type": "application/pdf", "x-sanhita-filename": file.name },
+      body: file
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (res) {
+        drop.classList.remove("is-busy");
+        if (!res.ok || !res.data.ok) {
+          say(res.data.error || "That file could not be read.", "bad");
+          return;
+        }
+        say("Read " + res.data.clauses + " clauses. Opening the document.", "good");
+        window.location.href = res.data.url;
+      })
+      .catch(function () {
+        drop.classList.remove("is-busy");
+        say("The upload did not reach the server.", "bad");
+      });
+  }
+
+  pick.addEventListener("click", function () { input.click(); });
+  input.addEventListener("change", function () { send(input.files[0]); });
+
+  ["dragenter", "dragover"].forEach(function (name) {
+    drop.addEventListener(name, function (e) {
+      e.preventDefault();
+      drop.classList.add("is-over");
+    });
+  });
+  ["dragleave", "drop"].forEach(function (name) {
+    drop.addEventListener(name, function (e) {
+      e.preventDefault();
+      drop.classList.remove("is-over");
+    });
+  });
+  drop.addEventListener("drop", function (e) {
+    if (e.dataTransfer && e.dataTransfer.files.length) send(e.dataTransfer.files[0]);
+  });
+  drop.addEventListener("submit", function (e) { e.preventDefault(); });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Remediation{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="t-caps t-mute">Stage 4 of 5</div>
+  <h1 class="t-title">Closing the gaps, not just listing them</h1>
+  <p class="t-mute">
+    The problem statement asks for gaps to be identified and remediated. Finding
+    one is a report. Closing one is a piece of work somebody owns, with a
+    deadline, that ends in evidence. Nothing here closes because a person says
+    it is fixed. A task closes when the certified rule is run again and the
+    engine returns no finding.
+  </p>
+</div>
+
+{% if not tasks %}
+  <div class="empty empty-quiet">
+    <p class="t-subhead">No remediation work has been raised yet.</p>
+    <p class="t-mute">
+      Open the <a href="{{ base }}/gaps">gaps screen</a>, pick a finding, and
+      raise a task against it. It gets an owner, a deadline and a required
+      artifact, and every step of its life is written to a chain that cannot be
+      edited afterwards.
+    </p>
+  </div>
+{% else %}
+
+<div class="gapbar">
+  <div class="gapstat {{ 'gapstat-bad' if summary.overdue else '' }}">
+    <div class="gapstat-n">{{ summary.overdue }}</div>
+    <div class="t-caps t-mute">Overdue</div>
+    <div class="t-micro t-mute">Past the date they were due to be fixed</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ summary.open }}</div>
+    <div class="t-caps t-mute">Still open</div>
+    <div class="t-micro t-mute">Of {{ summary.total }} raised in total</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ summary.ready_for_recheck }}</div>
+    <div class="t-caps t-mute">Ready to re-check</div>
+    <div class="t-micro t-mute">Evidence has arrived, the rule has not been re-run</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ summary.closed }}</div>
+    <div class="t-caps t-mute">Closed</div>
+    <div class="t-micro t-mute">Each one verified by the engine, not by a person</div>
+  </div>
+</div>
+
+<ul class="cards">
+  {% for t in tasks %}
+  <li class="remtask remtask-{{ t.status.value|lower }}" id="{{ t.task_id }}">
+    <div class="remtask-head">
+      <span class="t-mono remtask-id">{{ t.task_id }}</span>
+      <span class="status {{ 'status-rejected' if t.status.value in ('OPEN','REOPENED') else ('status-certified' if t.status.value == 'CLOSED' else 'status-proposed') }}">
+        {{ t.status.value.replace('_',' ')|lower }}
+      </span>
+      <span class="pill pill-{{ t.priority.value|lower }}">{{ t.priority.value|lower }}</span>
+      {% if t.is_overdue() %}<span class="badge badge-bad">overdue</span>{% endif %}
+      <a class="t-micro remtask-clause" href="{{ base }}/clause/{{ t.clause_id }}">clause {{ t.clause_id }}</a>
+      {# The whole story of this one gap, on one page, rather than four screens
+         and the ids held in your head. #}
+      <a class="t-micro remtask-chain" href="{{ base }}/chain/{{ t.task_id }}">
+        See the full chain
+      </a>
+    </div>
+
+    <p class="remtask-title">{{ t.title }}</p>
+
+    <div class="remtask-facts t-small">
+      <span><span class="t-caps t-mute">Owner</span> {{ t.owner or 'nobody yet' }}</span>
+      {% if t.assigned_team %}<span><span class="t-caps t-mute">Team</span> {{ t.assigned_team }}</span>{% endif %}
+      {% if t.due_date %}
+        <span><span class="t-caps t-mute">Due</span> {{ t.due_date.strftime('%d %b %Y') }}</span>
+      {% endif %}
+      {% if t.evidence_required %}
+        <span><span class="t-caps t-mute">Needs</span> {{ t.evidence_required }}</span>
+      {% endif %}
+      {% if t.recheck_count %}
+        <span><span class="t-caps t-mute">Re-checked</span> {{ t.recheck_count }}x</span>
+      {% endif %}
+    </div>
+
+    {% if t.remediation_action %}
+      <p class="t-small t-mute">{{ t.remediation_action }}</p>
+    {% endif %}
+
+    {% if t.last_recheck_result %}
+      <div class="remtask-result t-small">
+        <span class="t-caps t-mute">Last re-check</span> {{ t.last_recheck_result }}
+      </div>
+    {% endif %}
+
+    {# The artifacts this task points at. Not a note saying evidence exists,
+       the actual records, each one traceable to the document it came from. #}
+    {% if attached.get(t.task_id) %}
+      <div class="remtask-ev">
+        <div class="t-caps t-mute">Evidence attached to this task</div>
+        <ul class="remtask-evlist">
+          {% for e in attached[t.task_id] %}
+          <li>
+            <span class="t-mono t-micro">{{ e.id }}</span>
+            <span class="t-small">{{ e.artifact_type }}</span>
+            <span class="t-small t-mute">
+              occurred {{ e.occurred_on.strftime('%d %b %Y') }}{% if e.filed_on %}, filed {{ e.filed_on.strftime('%d %b %Y') }}{% else %}, not filed{% endif %}
+            </span>
+            {% if e.where() %}
+              <span class="t-micro t-mute">from {{ e.where() }}</span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if t.status.value == 'CLOSED' %}
+      <div class="remtask-closed t-small">
+        Verified by <strong>{{ t.verified_by }}</strong> on
+        {{ t.verified_at.strftime('%d %b %Y, %H:%M') }} UTC, because
+        {% if t.is_from_an_amendment %}
+          the store and the later document agree the rulebook was put right.
+        {% else %}
+          the certified rule was run again and returned no finding.
+        {% endif %}
+      </div>
+
+    {# A task raised from an amendment closes on a different fact. There is no
+       evidence to run a rule against: what has to be true is that the rulebook
+       itself was corrected, and the store and the later document say so between
+       them. Same log, same refusal to be told it is done. #}
+    {% elif t.is_from_an_amendment %}
+      <div class="remtask-actions">
+        <form method="post" action="{{ base }}/remediation/{{ t.task_id }}/assign">
+          <input class="field" type="text" name="owner" placeholder="owner"
+                 value="{{ t.owner }}" required>
+          <input class="field" type="text" name="team" placeholder="team"
+                 value="{{ t.assigned_team }}">
+          <button class="btn">{{ 'Reassign' if t.owner else 'Assign' }}</button>
+        </form>
+        {% if t.obligation_id %}
+        <a class="btn" href="{{ base }}/workbench/{{ t.obligation_id }}">Open the rule</a>
+        {% endif %}
+        <form method="post" action="{{ base }}/remediation/{{ t.task_id }}/recheck">
+          <button class="btn btn-solid">Check whether this is done</button>
+        </form>
+      </div>
+      <p class="t-micro t-mute">
+        Raised from a regulatory change rather than a missing record, so nothing
+        is attached to it. It closes when the store and the later document agree,
+        and not before. There is no button that marks it fixed.
+      </p>
+
+    {% else %}
+      <div class="remtask-actions">
+        <form method="post" action="{{ base }}/remediation/{{ t.task_id }}/assign">
+          <input class="field" type="text" name="owner" placeholder="owner"
+                 value="{{ t.owner }}" required>
+          <input class="field" type="text" name="team" placeholder="team"
+                 value="{{ t.assigned_team }}">
+          <button class="btn">{{ 'Reassign' if t.owner else 'Assign' }}</button>
+        </form>
+
+        <form method="post" action="{{ base }}/remediation/{{ t.task_id }}/recheck">
+          <button class="btn btn-solid" {{ 'disabled' if not t.evidence_ids }}>
+            Run the rule again
+          </button>
+        </form>
+      </div>
+      {% if not t.evidence_ids %}
+      <p class="t-micro t-mute">
+        Attach the corrective evidence first. A task that closes without naming
+        the record that closed it leaves an inspector nothing to follow.
+      </p>
+      {% endif %}
+
+      {% if candidates.get(t.task_id) %}
+      <details class="remtask-attach">
+        <summary class="t-small">
+          Attach the records that answer this
+          ({{ candidates[t.task_id]|length }} filed against this rule)
+        </summary>
+        <form method="post" action="{{ base }}/remediation/{{ t.task_id }}/attach">
+          <ul class="remtask-pick">
+            {% for e in candidates[t.task_id] %}
+            <li>
+              <label>
+                <input type="checkbox" name="evidence_id" value="{{ e.id }}">
+                <span class="t-mono t-micro">{{ e.id }}</span>
+                <span class="t-small">{{ e.artifact_type }}</span>
+                <span class="t-small t-mute">
+                  {{ e.occurred_on.strftime('%d %b %Y') }}{% if e.reference %}, {{ e.reference }}{% endif %}
+                </span>
+                {% if e.where() %}
+                  <span class="t-micro t-mute">from {{ e.where() }}</span>
+                {% endif %}
+              </label>
+            </li>
+            {% endfor %}
+          </ul>
+          <button class="btn">Attach to this task</button>
+        </form>
+        <p class="t-micro t-mute">
+          Attaching moves this to awaiting re-check. It does not close anything.
+          The engine still has to run and agree.
+        </p>
+      </details>
+      {% elif not has_evidence %}
+      <p class="t-micro t-mute">
+        No compliance records have been uploaded, so there is nothing to attach
+        and the rule cannot be run again.
+        <a href="{{ base }}/review">Upload evidence</a>.
+      </p>
+      {% endif %}
+
+      <p class="t-micro t-mute">
+        There is no button that marks this fixed. Re-running the rule is the
+        only way it can close, and if the engine still finds a breach the task
+        reopens instead.
+      </p>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="section-rule">
+  <span class="t-caps t-mute">What happened, in order</span>
+</div>
+
+<div class="caveats {{ 'caveats-bad' if not chain_ok[0] }}">
+  <div class="t-caps t-mute">
+    {% if chain_ok[0] %}
+      This history is hash chained and verifies
+    {% else %}
+      This history does not verify
+    {% endif %}
+  </div>
+  <p class="t-small">
+    {% if chain_ok[0] %}
+      Every entry carries the hash of the one before it. Altering any of them
+      breaks the chain, and this line would say so. Nothing here is edited in
+      place, including corrections.
+    {% else %}
+      {{ chain_ok[1] }}
+    {% endif %}
+  </p>
+</div>
+
+<table class="grid">
+  <colgroup>
+    <col style="width:16%"><col style="width:14%"><col style="width:16%">
+    <col style="width:16%"><col style="width:38%">
+  </colgroup>
+  <thead><tr>
+    <th>When</th><th>Task</th><th>What</th><th>By</th><th>Note</th>
+  </tr></thead>
+  <tbody>
+    {% for e in log %}
+    <tr>
+      <td class="t-small">{{ e.at.strftime('%d %b, %H:%M') }}</td>
+      <td><a class="t-mono t-small" href="#{{ e.task_id }}">{{ e.task_id }}</a></td>
+      <td class="t-small">{{ e.transition.value.replace('_',' ')|lower }}</td>
+      <td class="t-small">{{ e.actor }}</td>
+      <td class="t-small">{{ e.note }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

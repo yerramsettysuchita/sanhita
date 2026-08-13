@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Review Queue{% endblock %}
+
+{% block content %}
+
+{% if not counts.total %}
+  <div class="empty">
+    <p class="t-subhead">Nothing has been compiled from this document yet.</p>
+    <p class="t-mute">
+      Open the <a href="{{ base }}">document page</a> and compile it. Every clause
+      that carries a duty becomes a proposed rule, and they arrive here for you
+      to certify one at a time.
+    </p>
+  </div>
+{% else %}
+
+<div class="page-head">
+  <h1 class="t-title">What needs your attention</h1>
+  <p class="t-mute">
+    Every number here is read from the store. Certification is always one
+    person and one rule, so there is no bulk certify.
+  </p>
+</div>
+
+<!-- Progress toward a certified rulebook. -->
+<div class="progress-card">
+  <div class="progress-top">
+    <div>
+      <div class="progress-n">{{ counts.certified }} <span class="t-mute">of {{ counts.total }}</span></div>
+      <div class="t-caps t-mute">Rules certified</div>
+    </div>
+    <div class="progress-pct t-mono">{{ progress }}%</div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" style="width: {{ progress if progress > 0.4 else 0.4 }}%"></div></div>
+  <div class="progress-legend t-micro t-mute">
+    {{ counts.proposed }} waiting, {{ counts.rejected }} rejected, {{ counts.superseded }} superseded
+  </div>
+</div>
+
+<!-- The three lanes of work, in the order a reviewer should take them. -->
+<div class="lanes">
+  <a class="lane lane-blocked" href="{{ base }}/queue?unresolved=1">
+    <div class="lane-n">{{ lane_counts.blocked }}</div>
+    <div class="lane-h">Need your decision</div>
+    <p class="lane-p">The clause left something open. Sanhita will not guess, so
+       these cannot be signed until you answer.</p>
+    <span class="lane-go">Start here</span>
+  </a>
+  <a class="lane" href="{{ base }}/queue?low_confidence=1">
+    <div class="lane-n">{{ lane_counts.low_confidence }}</div>
+    <div class="lane-h">Worth a closer look</div>
+    <p class="lane-p">The extractor is under 0.75 confident. Nothing is blocking
+       them, but they are the likeliest to be wrong.</p>
+    <span class="lane-go">Review</span>
+  </a>
+  <a class="lane" href="{{ base }}/queue?status=PROPOSED">
+    <div class="lane-n">{{ lane_counts.ready }}</div>
+    <div class="lane-h">Ready to certify</div>
+    <p class="lane-p">Complete, confident, and nothing outstanding. These move
+       fastest with the keyboard.</p>
+    <span class="lane-go">Work through</span>
+  </a>
+</div>
+
+{% if first_blocked %}
+<div class="nextup">
+  <div>
+    <div class="t-caps t-mute">Suggested next</div>
+    <div class="nextup-id t-mono">Clause {{ first_blocked }}</div>
+  </div>
+  <a class="btn btn-solid" href="{{ base }}/clause/{{ first_blocked }}">Open it</a>
+</div>
+{% endif %}
+
+<div class="section-rule"><span class="t-caps t-mute">Browse everything</span></div>
+
+<form class="filters" method="get" action="{{ base }}/queue">
+  <label class="t-caps">Section
+    <select class="field" name="section" onchange="this.form.submit()">
+      <option value="">all</option>
+      {% for s in sections %}
+      <option value="{{ s }}" {{ 'selected' if filters.section == s }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="t-caps">Status
+    <select class="field" name="status" onchange="this.form.submit()">
+      <option value="">all</option>
+      {% for s in ['PROPOSED','CERTIFIED','REJECTED','SUPERSEDED'] %}
+      <option value="{{ s }}" {{ 'selected' if filters.status == s }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="check"><input type="checkbox" name="unresolved" value="1"
+    {{ 'checked' if filters.unresolved }} onchange="this.form.submit()"> needs a decision</label>
+  <label class="check"><input type="checkbox" name="low_confidence" value="1"
+    {{ 'checked' if filters.low_confidence }} onchange="this.form.submit()"> confidence below 0.75</label>
+  {% if filters.section or filters.status or filters.unresolved or filters.low_confidence %}
+    <a class="t-small clearfilters" href="{{ base }}/queue">Clear filters</a>
+  {% endif %}
+</form>
+
+{% if not rows %}
+  <div class="empty">
+    <p class="t-subhead">Nothing matches those filters.</p>
+    <p class="t-mute"><a href="{{ base }}/queue">Clear them</a> to see the whole queue.</p>
+  </div>
+{% else %}
+{% set qs %}{% if filters.section %}section={{ filters.section }}&amp;{% endif %}{% if filters.status %}status={{ filters.status }}&amp;{% endif %}{% if filters.unresolved %}unresolved=1&amp;{% endif %}{% if filters.low_confidence %}low_confidence=1&amp;{% endif %}{% endset %}
+
+<div class="rowcount t-small t-mute">
+  <span class="rowcount-n">
+    Showing <span class="t-mono">{{ first_shown }}</span> to
+    <span class="t-mono">{{ last_shown }}</span> of
+    <span class="t-mono">{{ total_matched }}</span> rules
+  </span>
+  <span class="rowcount-hint">
+    Press <kbd>J</kbd> and <kbd>K</kbd> to walk the list, <kbd>Enter</kbd> to open.
+  </span>
+</div>
+
+<ul class="cards">
+  {% for r in rows %}
+  <li class="rulecard row{{ ' is-blocked' if r.issue_count }}" data-clause="{{ r.clause_id }}" tabindex="0">
+    <div class="rulecard-main">
+      <div class="rulecard-top">
+        <a class="rulecard-clause t-mono" href="{{ base }}/clause/{{ r.clause_id }}">{{ r.clause_id }}</a>
+        <span class="status status-{{ r.status|lower }}">{{ r.status }}</span>
+        {% if r.issue_count %}<span class="badge">Needs a decision</span>{% endif %}
+      </div>
+      <p class="rulecard-text">{{ r.title[:150] }}</p>
+      <div class="rulecard-meta t-micro t-mute">
+        <span class="t-mono">{{ r.id }}</span>
+        <span>page {{ r.page }}</span>
+        <span>{{ r.engine }}</span>
+      </div>
+    </div>
+    <div class="rulecard-side">
+      <span class="pill pill-actor">{{ r.actor.replace('_',' ')|lower }}</span>
+      <span class="pill pill-{{ r.modality|lower }}">{{ r.modality.replace('_',' ')|lower }}</span>
+      <div class="conf-wrap" title="how confident the extractor is">
+        <div class="conf-bar"><i style="width: {{ (r.confidence * 100)|round }}%"></i></div>
+        <span class="t-micro t-mono {{ 'lowconf' if r.confidence < 0.75 }}">{{ '%.2f'|format(r.confidence) }}</span>
+      </div>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if pages > 1 %}
+<nav class="pager" aria-label="Queue pages">
+  {% if page > 1 %}
+    <a class="btn" href="?{{ qs }}page={{ page - 1 }}" rel="prev">Previous</a>
+  {% else %}
+    <span class="btn is-disabled" aria-disabled="true">Previous</span>
+  {% endif %}
+
+  <span class="pager-at t-small t-mute">
+    Page <span class="t-mono">{{ page }}</span> of <span class="t-mono">{{ pages }}</span>
+  </span>
+
+  {% if page < pages %}
+    <a class="btn" href="?{{ qs }}page={{ page + 1 }}" rel="next">Next</a>
+  {% else %}
+    <span class="btn is-disabled" aria-disabled="true">Next</span>
+  {% endif %}
+</nav>
+{% endif %}
+{% endif %}
+{% endif %}
+{% endblock %}

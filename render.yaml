@@ -1,0 +1,38 @@
+# Render deployment, as the alternative to fly.toml.
+#
+# Render needs no CLI: connect the GitHub repository in the dashboard and it
+# reads this file. That makes it the lower-risk option when the deadline is
+# close and nobody wants to debug a CLI login.
+#
+# The trade is cold starts. On the free instance Render spins the service down
+# after inactivity, and waking it means booting the container and parsing the
+# circular again. A reviewer arriving cold waits. `plan: starter` avoids that
+# and is the right choice for the period this is being judged in.
+
+services:
+  - type: web
+    name: sanhita
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: singapore          # Closest Render region to Mumbai.
+    plan: starter              # `free` spins down; a cold parse then costs ~30s.
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: SANHITA_SIGNING_KEY
+        generateValue: true    # Render generates and stores it. Never in the repo.
+      - key: SANHITA_CACHE_LIMIT
+        value: "4"
+      - key: SANHITA_SHARED
+        # A public URL, so the firm's own data in the worked example is kept per
+        # visitor. One reviewer's filing register must not be assessed for the
+        # next reviewer. The rulebook stays shared: it is the regulator's text.
+        value: "1"
+      - key: PORT
+        value: "8000"
+    disk:
+      # Certifications made through the deployed site are written here. Without
+      # it they are lost on the next deploy.
+      name: sanhita-store
+      mountPath: /app/.sanhita
+      sizeGB: 1

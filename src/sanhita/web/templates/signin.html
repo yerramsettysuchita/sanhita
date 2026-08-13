@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - {{ 'Create Account' if mode == 'signup' else 'Sign In' }}{% endblock %}
+
+{% block content %}
+<div class="authwrap">
+  <div class="authcard">
+    <h1 class="t-head">
+      {% if mode == 'signup' %}Create an account{% else %}Sign in{% endif %}
+    </h1>
+    <p class="t-small t-mute authlede">
+      {% if mode == 'signup' %}
+        Your name is what appears against every rule you certify, so it has to
+        be a real one. Accounts live on this machine and nowhere else.
+      {% else %}
+        Compliance work is confidential, so each person's documents stay
+        separate. Nothing is sent anywhere.
+      {% endif %}
+    </p>
+
+    {% if error %}
+      <div class="autherr">{{ error }}</div>
+    {% endif %}
+
+    {% if not key_present %}
+      <div class="autherr">
+        SANHITA_SIGNING_KEY is not set. Sessions are signed with a key derived
+        from it, so accounts cannot be used until one is configured.
+      </div>
+    {% endif %}
+
+    <form method="post" action="{{ '/signup' if mode == 'signup' else '/signin' }}" class="authform">
+      {% if mode == 'signup' %}
+        <label class="authfield">
+          <span class="t-caps">Your name</span>
+          <input class="field" type="text" name="name" required autocomplete="name"
+                 placeholder="R Yerramsetty, Compliance Officer">
+        </label>
+      {% endif %}
+
+      <label class="authfield">
+        <span class="t-caps">Email</span>
+        <input class="field" type="email" name="email" required autocomplete="email">
+      </label>
+
+      <label class="authfield">
+        <span class="t-caps">Password</span>
+        <input class="field" type="password" name="password" required
+               autocomplete="{{ 'new-password' if mode == 'signup' else 'current-password' }}"
+               minlength="{{ 10 if mode == 'signup' else 1 }}">
+        {% if mode == 'signup' %}
+          <span class="t-micro t-mute">
+            At least 10 characters. A passphrase of a few words is stronger than
+            a short jumble of symbols.
+          </span>
+        {% endif %}
+      </label>
+
+      {% if mode != 'signup' %}
+        <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
+
+      <button class="btn btn-solid authgo" {{ 'disabled' if not key_present }}>
+        {% if mode == 'signup' %}Create the account{% else %}Sign in{% endif %}
+      </button>
+    </form>
+
+    <p class="t-small t-mute authswap">
+      {% if mode == 'signup' %}
+        Already have an account? <a href="/signin">Sign in</a>.
+      {% else %}
+        No account yet? <a href="/signup">Create one</a>.
+      {% endif %}
+    </p>
+
+    <p class="t-micro t-mute authnote">
+      There is no password reset by email, because Sanhita sends no email and
+      makes no network call. Whoever administers this machine resets a password.
+    </p>
+  </div>
+</div>
+{% endblock %}

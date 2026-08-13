@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Regulatory Load{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">What this regulation asks for</h1>
+  <p class="t-mute">
+    Everybody in the market has an opinion about whether the compliance load is
+    proportionate. Nobody has the number, because getting it means reading the
+    whole circular and counting, and the answer changes every time it is
+    reissued. Once the rules are typed it is arithmetic.
+  </p>
+</div>
+
+{% if not burden.actors %}
+  <div class="empty">
+    <p class="t-subhead">Nothing has been compiled from this document yet.</p>
+    <p class="t-mute">Compile it and this page will count what it asks of whom.</p>
+  </div>
+{% else %}
+
+{% set lead = burden.heaviest %}
+<div class="loadhero">
+  <div class="loadhero-main">
+    <div class="t-caps t-mute">Heaviest obligation holder</div>
+    <div class="loadhero-actor">{{ lead.actor.replace('_',' ')|lower }}</div>
+    <div class="loadhero-n t-mono">{{ '{:,}'.format(lead.filings_per_year) }}</div>
+    <div class="t-caps t-mute">Occasions a year</div>
+    <p class="t-small t-mute loadhero-note">
+      Counted from <span class="t-mono">{{ lead.recurring_duties }}</span>
+      recurring duties across <span class="t-mono">{{ lead.clauses|length }}</span>
+      clauses. Event-driven and standing duties are excluded from this figure,
+      because how often they fire depends on the firm rather than on the
+      regulation.
+    </p>
+  </div>
+  <div class="loadhero-side">
+    <div class="cov-stat">
+      <div class="cov-stat-n t-mono">{{ lead.duties }}</div>
+      <div class="t-caps t-mute">Distinct duties</div>
+      <div class="t-micro t-mute">{{ lead.certified }} of them signed</div>
+    </div>
+    <div class="cov-stat">
+      <div class="cov-stat-n t-mono">{{ lead.standing }}</div>
+      <div class="t-caps t-mute">Standing requirements</div>
+      <div class="t-micro t-mute">Always true, no deadline attached</div>
+    </div>
+    <div class="cov-stat">
+      <div class="cov-stat-n t-mono">{{ lead.event_driven }}</div>
+      <div class="t-caps t-mute">Event driven</div>
+      <div class="t-micro t-mute">Fire on a trade, a breach or a request</div>
+    </div>
+  </div>
+</div>
+
+<!-- The caveats are not a disclaimer at the bottom. A burden figure quoted
+     without them would deserve to be taken apart, so they sit next to it. -->
+<div class="caveats">
+  <div class="t-caps t-mute">How this is counted</div>
+  <ul>
+    {% for note in burden.caveats() %}<li class="t-small">{{ note }}</li>{% endfor %}
+  </ul>
+</div>
+
+<div class="section-rule"><span class="t-caps t-mute">Every actor the circular names</span></div>
+
+<table class="grid">
+  <colgroup>
+    <col style="width:22%"><col style="width:11%"><col style="width:11%">
+    <col style="width:12%"><col style="width:11%"><col style="width:11%"><col style="width:22%">
+  </colgroup>
+  <thead><tr>
+    <th>Actor</th>
+    <th class="num">Duties</th>
+    <th class="num">Signed</th>
+    <th class="num">Clauses</th>
+    <th class="num">Standing</th>
+    <th class="num">Event</th>
+    <th class="num">Occasions a year</th>
+  </tr></thead>
+  <tbody>
+    {% for a in burden.actors %}
+    <tr>
+      <td>{{ a.actor.replace('_',' ')|lower }}</td>
+      <td class="num t-mono">{{ a.duties }}</td>
+      <td class="num t-mono">{{ a.certified }}</td>
+      <td class="num t-mono">{{ a.clauses|length }}</td>
+      <td class="num t-mono">{{ a.standing }}</td>
+      <td class="num t-mono">{{ a.event_driven }}</td>
+      <td class="num t-mono">{{ '{:,}'.format(a.filings_per_year) if a.filings_per_year else '0' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="section-rule">
+  <span class="t-caps t-mute">Clauses an amendment would disturb most</span>
+</div>
+
+<p class="t-small t-mute" style="margin-bottom:var(--s-4)">
+  A clause carrying many signed rules, cited by many others, is expensive to
+  change. Knowing which ones those are before drafting an amendment is the
+  difference between a small change and a re-certification programme.
+  {% if fragility.citation_edges == 0 %}
+    This circular contains almost no internal cross-references, so the ranking
+    below is driven by how much each clause carries rather than by what cites it.
+  {% endif %}
+</p>
+
+{% if not fragility.ranked %}
+  <p class="t-mute">Nothing certified yet, so no clause is load bearing.</p>
+{% else %}
+<table class="grid">
+  <colgroup>
+    <col style="width:14%"><col style="width:9%"><col style="width:11%">
+    <col style="width:11%"><col style="width:13%"><col style="width:42%">
+  </colgroup>
+  <thead><tr>
+    <th>Clause</th>
+    <th class="num">Page</th>
+    <th class="num">Rules</th>
+    <th class="num">Signed</th>
+    <th class="num">Cited by</th>
+    <th>What it says</th>
+  </tr></thead>
+  <tbody>
+    {% for c in fragility.ranked[:20] %}
+    <tr>
+      <td><a class="t-mono" href="{{ base }}/clause/{{ c.clause_id }}">{{ c.clause_id }}</a></td>
+      <td class="num t-mono">{{ c.page }}</td>
+      <td class="num t-mono">{{ c.own_rules }}</td>
+      <td class="num t-mono">{{ c.own_certified }}</td>
+      <td class="num t-mono">{{ c.dependent_clauses }}</td>
+      <td class="t-small">{{ c.excerpt[:120] }}{% if c.excerpt|length > 120 %}...{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+{% endblock %}

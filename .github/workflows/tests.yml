@@ -1,0 +1,56 @@
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,web]"
+
+      - name: Tests
+        env:
+          # Certification signs over canonical bytes and refuses to run without
+          # a key. This one is for CI only and signs nothing that leaves CI.
+          SANHITA_SIGNING_KEY: ci-only-not-a-production-key
+        run: pytest -q
+
+      # The corpus PDF is gitignored, because a SEBI circular is not ours to
+      # redistribute. Every test that needs it skips rather than fails, so CI is
+      # green on a clean checkout and the count below shows how much was skipped.
+      - name: Report what CI could not run
+        if: always()
+        env:
+          SANHITA_SIGNING_KEY: ci-only-not-a-production-key
+        run: |
+          echo "Tests requiring the corpus PDF are skipped in CI."
+          pytest -q -rs 2>&1 | tail -20
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check src tests

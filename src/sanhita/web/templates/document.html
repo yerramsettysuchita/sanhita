@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Document{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">{{ workspace.name }}</h1>
+  <p class="t-mute">
+    What Sanhita could read from this document, before anything is compiled. The
+    parser is deterministic, so this page is the same every time for the same
+    bytes.
+  </p>
+</div>
+
+<!-- The verdict. This is the screen that is allowed to say "no". -->
+<div class="verdict verdict-{{ quality.verdict.value|lower }}">
+  <div class="verdict-l">
+    <div class="t-caps">Can this be compiled?</div>
+    <div class="verdict-n">
+      {% if quality.verdict.value == 'READABLE' %}Yes
+      {% elif quality.verdict.value == 'PARTIAL' %}With care
+      {% else %}No{% endif %}
+    </div>
+    <p class="t-small">{{ quality.headline }}</p>
+  </div>
+
+  <div class="verdict-figures">
+    <div class="vfig">
+      <div class="vfig-n">{{ quality.clauses }}</div>
+      <div class="t-caps t-mute">Clauses read</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ quality.sections }}</div>
+      <div class="t-caps t-mute">Sections</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ quality.pages }}</div>
+      <div class="t-caps t-mute">Pages</div>
+    </div>
+    <div class="vfig">
+      <div class="vfig-n">{{ counts.total }}</div>
+      <div class="t-caps t-mute">Rules proposed</div>
+    </div>
+  </div>
+</div>
+
+<!-- Compile, or the reason you cannot. -->
+<div class="compilebar" id="compilebar" data-progress="{{ base }}/progress">
+  {% if not quality.can_compile %}
+    <div class="compilebar-msg">
+      <div class="t-caps t-mute">Compiling is disabled</div>
+      <p class="t-small">
+        Producing rules from a document this parser could not read would give you
+        a rulebook nobody could certify. The reasons are listed below.
+      </p>
+    </div>
+  {% elif job and job.state == 'running' %}
+    <div class="compilebar-msg" role="status" aria-live="polite">
+      <div class="t-caps t-mute">Compiling</div>
+      <div class="compile-n"><span id="cdone">{{ job.done }}</span> of {{ job.total }} clauses</div>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ job.percent }}"><div class="progress-fill" id="cbar" style="width: {{ job.percent }}%"></div></div>
+      <div class="t-micro t-mute" id="cnote">{{ job.proposed }} rules proposed so far</div>
+    </div>
+    <form method="post" action="{{ base }}/cancel">
+      <button class="btn btn-quiet">Stop</button>
+    </form>
+  {% else %}
+    <div class="compilebar-msg">
+      <div class="t-caps t-mute">
+        {% if counts.total %}Compile again{% else %}Compile this document{% endif %}
+      </div>
+      <p class="t-small">
+        {% if counts.total %}
+          {{ counts.total }} rules are already proposed. Recompiling adds
+          anything new and leaves certified rules untouched.
+        {% else %}
+          Turn every clause that carries a duty into a proposed rule. Nothing is
+          certified by this step. A person still has to sign each one.
+        {% endif %}
+      </p>
+      {% if job and job.state == 'finished' %}
+        <div class="t-micro good">
+          Last run: {{ job.proposed }} proposed, {{ job.no_obligation }} clauses
+          carried no duty, {{ job.failed }} could not be read, in {{ job.seconds }}s.
+        </div>
+      {% elif job and job.state == 'failed' %}
+        <div class="t-micro bad">Last run failed: {{ job.error }}</div>
+      {% elif job and job.state == 'cancelled' %}
+        <div class="t-micro warn">Last run was stopped after {{ job.done }} clauses. Nothing was written.</div>
+      {% endif %}
+    </div>
+
+    <form method="post" action="{{ base }}/compile" class="compile-form">
+      <label class="t-caps">Engine
+        <select class="field" name="engine">
+          <option value="rules">Rules, deterministic and offline</option>
+          <option value="llm" {{ 'disabled' if not llm_available }}>
+            Model assisted{{ ' (no API key set)' if not llm_available }}
+          </option>
+        </select>
+      </label>
+      <button class="btn btn-solid">Compile</button>
+    </form>
+  {% endif %}
+</div>
+
+{% if quality.concerns %}
+<div class="section-rule"><span class="t-caps t-mute">What the parser found, and what it did not</span></div>
+
+<ul class="concerns">
+  {% for c in quality.concerns %}
+  <li class="concern concern-{{ c.level }}">
+    <div class="concern-tag t-caps">
+      {% if c.level == 'blocker' %}Blocker{% elif c.level == 'warning' %}Warning{% else %}Note{% endif %}
+    </div>
+    <div class="concern-body">
+      <div class="concern-h">
+        {{ c.title }}{% if c.count %} <span class="concern-count">{{ c.count }}</span>{% endif %}
+      </div>
+      <p class="t-small t-mute">{{ c.detail }}</p>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if latency and latency.first_proposed_at %}
+{# Problem Statement 2 sets its own success test: reduce the gap between
+   regulatory issuance and operational compliance action. That is a
+   measurement, so it is measured. Every moment below was recorded when the
+   work happened, for provenance, not instrumented for this strip. #}
+<div class="section-rule">
+  <span class="t-caps t-mute">From published text to an operating rule</span>
+</div>
+
+<div class="latency">
+  <div class="latency-track">
+    {% for m in latency.milestones %}
+      {% if m.recorded %}
+      <div class="lat-step {{ 'lat-external' if m.external }}">
+        <div class="lat-dot" aria-hidden="true"></div>
+        <div class="t-caps lat-label">{{ m.label }}</div>
+        <div class="t-micro t-mute lat-when">{{ m.at.strftime('%d %b %Y, %H:%M') }}</div>
+        <div class="t-micro t-mute">{{ m.detail }}</div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  {# Machine time and human time were sitting in one undifferentiated row, so
+     the nine hour figure read as though the software had spent nine hours
+     computing. It is a person going home and coming back. Splitting them is
+     the fix; a caption saying so underneath was not enough. #}
+  <div class="latgroup">
+    <div class="latgroup-label t-caps">What the machine did</div>
+    <div class="latency-figures">
+      <div class="latfig latfig-machine">
+        <div class="latfig-n t-mono">{{ latency.compile_window|duration }}</div>
+        <div class="t-caps t-mute">To read the whole circular</div>
+        <div class="t-micro t-mute">
+          {{ '{:,}'.format(latency.rules_proposed) }} typed obligations
+          {% if latency.rules_per_second %}
+            &middot; {{ '{:,.0f}'.format(latency.rules_per_second) }} a second
+          {% endif %}
+        </div>
+        <div class="t-micro latfig-tag">no model was called</div>
+      </div>
+    </div>
+  </div>
+
+  {% if latency.time_to_first_certified or latency.certification_window %}
+  <div class="latgroup">
+    <div class="latgroup-label t-caps">What a person did</div>
+    <div class="latency-figures">
+      {% if latency.time_to_first_certified %}
+      <div class="latfig latfig-human">
+        <div class="latfig-n t-mono">{{ latency.time_to_first_certified|duration }}</div>
+        <div class="t-caps t-mute">Until the first rule was signed</div>
+        <div class="t-micro t-mute">
+          Wall clock, so it counts the night in between. Not compute time
+        </div>
+      </div>
+      {% endif %}
+      {% if latency.certification_window %}
+      <div class="latfig latfig-human">
+        <div class="latfig-n t-mono">{{ latency.certification_window|duration }}</div>
+        <div class="t-caps t-mute">To sign {{ latency.rules_certified }} rules</div>
+        <div class="t-micro t-mute">One reviewer, across working sessions</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if latency.shelf_time %}
+  <div class="latgroup">
+    <div class="latgroup-label t-caps">Neither, and shown anyway</div>
+    <div class="latency-figures">
+      <div class="latfig latfig-quiet">
+        <div class="latfig-n t-mono">{{ latency.shelf_time|duration }}</div>
+        <div class="t-caps t-mute">Sat before anyone ran it</div>
+        <div class="t-micro t-mute">
+          The circular was published long before we downloaded it. This measures
+          us being late, not the product being slow, and it is kept out of every
+          headline for that reason
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="caveats">
+  <div class="t-caps t-mute">What these timings do and do not mean</div>
+  <ul>
+    {% for note in latency.caveats() %}<li class="t-small">{{ note }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="section-rule"><span class="t-caps t-mute">Provenance</span></div>
+
+<table class="grid">
+  <colgroup><col style="width:34%"><col style="width:66%"></colgroup>
+  <thead><tr><th>What</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Source file</td><td>{{ workspace.source_name }}</td></tr>
+    <tr>
+      <td>Document hash, SHA-256</td>
+      <td class="t-code">{{ workspace.doc_sha256 or 'built in corpus file' }}</td>
+    </tr>
+    <tr><td>Parse tree fingerprint</td><td class="t-code">{{ fingerprint }}</td></tr>
+    <tr><td>Characters extracted</td><td>{{ '{:,}'.format(stats.document_chars) }}</td></tr>
+    <tr><td>Parse time</td><td>{{ '%.2f'|format(stats.parse_seconds) }} seconds</td></tr>
+    <tr>
+      <td>Rules certified</td>
+      <td>{{ counts.certified }} of {{ counts.total }} proposed</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="t-small t-mute provnote">
+  The fingerprint is a hash of every clause id, span and text in the tree. Two
+  runs over the same PDF produce the same fingerprint, which is how you can tell
+  that nothing was rewritten between a rule being proposed and being signed.
+</p>
+
+{% if counts.certified %}
+<div class="nextup">
+  <div>
+    <div class="t-caps t-mute">Take it with you</div>
+    <div class="nextup-id">
+      {{ counts.certified }} certified rules, as JSON, with their signatures and
+      their source anchors.
+    </div>
+  </div>
+  <a class="btn btn-solid" href="{{ base }}/export">Download the rulebook</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  var bar = document.getElementById("compilebar");
+  if (!bar || !document.getElementById("cbar")) return;
+
+  var url = bar.getAttribute("data-progress");
+
+  function tick() {
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (job) {
+        if (job.state !== "running") { window.location.reload(); return; }
+        document.getElementById("cdone").textContent = job.done;
+        document.getElementById("cbar").style.width = job.percent + "%";
+        document.getElementById("cnote").textContent =
+          job.proposed + " rules proposed so far";
+        setTimeout(tick, 700);
+      })
+      .catch(function () { setTimeout(tick, 2000); });
+  }
+  tick();
+})();
+</script>
+{% endblock %}

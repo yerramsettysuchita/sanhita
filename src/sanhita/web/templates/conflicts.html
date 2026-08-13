@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - Contradictions{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1 class="t-title">A drafting report on the circular itself</h1>
+  <p class="t-mute">
+    A master circular is a consolidation. When two earlier circulars told the
+    same party to do the same thing on different timelines, both sentences
+    survive into the consolidated text, ninety pages apart. Reading front to
+    back will not find them. Comparing typed rules will. Every finding below
+    carries both clauses in full and the SHA-256 of each, so anyone can check
+    it against the published PDF without taking this screen's word for it.
+  </p>
+</div>
+
+{% if not report.conflicts %}
+  <div class="empty">
+    <p class="t-subhead">Nothing in this rulebook contradicts anything else in it.</p>
+    <p class="t-mute">
+      {{ report.rules_examined }} rules were examined and
+      {{ report.pairs_compared }} pairs were compared in full.
+    </p>
+  </div>
+{% else %}
+
+{# Contradictions and duplications are counted separately and deliberately.
+   Adding them together and calling the total "contradictions" would overstate
+   this by a factor of six on the stock broker circular. #}
+<div class="gapbar">
+  <div class="gapstat {{ 'gapstat-bad' if report.contradictions else '' }}">
+    <div class="gapstat-n">{{ report.contradictions|length }}</div>
+    <div class="t-caps t-mute">Contradictions</div>
+    <div class="t-micro t-mute">The rulebook gives two different answers</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.duplications|length }}</div>
+    <div class="t-caps t-mute">Duplications</div>
+    <div class="t-micro t-mute">
+      The same duty stated in more than one place. Not a contradiction
+    </div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.between_certified|length }}</div>
+    <div class="t-caps t-mute">Between signed rules</div>
+    <div class="t-micro t-mute">Both sides already carry a human signature</div>
+  </div>
+  <div class="gapstat">
+    <div class="gapstat-n">{{ report.pairs_compared }}</div>
+    <div class="t-caps t-mute">Pairs compared in full</div>
+    <div class="t-micro t-mute">From {{ report.rules_examined }} rules examined</div>
+  </div>
+</div>
+
+<div class="caveats caveats-warn">
+  <div class="t-caps">This is a service to the drafter, not a criticism of one</div>
+  <p class="t-small">
+    Nothing here says the regulation is wrong. It says a compiler found places
+    worth a second look that 214 pages of prose can hide, which is exactly what
+    a compiler is for. Two clauses can look contradictory and both be correct.
+    Every finding is phrased as a question because that is what it is.
+  </p>
+</div>
+
+<!-- Nothing on this page is an accusation, and the page has to say so. -->
+<div class="caveats">
+  <div class="t-caps t-mute">How to read this</div>
+  <ul>
+    {% for note in report.caveats() %}<li class="t-small">{{ note }}</li>{% endfor %}
+  </ul>
+</div>
+
+<div class="section-rule"><span class="t-caps t-mute">Most serious first</span></div>
+
+<ul class="cards">
+  {% for c in findings %}
+  <li class="conflict conflict-{{ c.kind.value|lower }}">
+    <div class="conflict-head">
+      <span class="status {{ 'status-rejected' if c.kind.value in ('MODALITY','DEADLINE') else 'status-proposed' }}">
+        {% if c.kind.value == 'MODALITY' %}Required and forbidden
+        {% elif c.kind.value == 'DEADLINE' %}Different timelines
+        {% elif c.kind.value == 'DAY_COUNT' %}Resolved differently
+        {% else %}Stated twice{% endif %}
+      </span>
+      {% if c.involves_certified %}
+        <span class="badge">Both already signed</span>
+      {% endif %}
+      <span class="t-micro t-mute">
+        {% if c.confidence.value == 'DIRECT' %}
+          Same actor, same verb, same object
+        {% else %}
+          Same actor and verb, closely matching object
+        {% endif %}
+      </span>
+    </div>
+
+    <p class="conflict-q">{{ c.question }}</p>
+
+    <div class="conflict-pair">
+      {% for side in (c.left, c.right) %}
+      <div class="conflict-side">
+        <div class="conflict-side-top">
+          <a class="gapcard-clause t-mono" href="{{ base }}/clause/{{ side.source.clause_id }}">{{ side.source.clause_id }}</a>
+          <span class="t-micro t-mute">page {{ side.source.page }}</span>
+          <span class="status status-{{ side.status.value|lower }}">{{ side.status.value }}</span>
+        </div>
+        <div class="conflict-rule t-small">
+          <span class="pill pill-{{ side.modality.value|lower }}">{{ side.modality.value.replace('_',' ')|lower }}</span>
+          {{ side.action.verb }} {{ side.action.object }}
+          {% if side.deadline and side.deadline.offset_days is not none %}
+            <span class="conflict-days">
+              {{ side.deadline.offset_days }} {{ side.deadline.business_days.value|lower }} day{{ 's' if side.deadline.offset_days != 1 }}
+            </span>
+          {% endif %}
+        </div>
+        <blockquote class="cite-verbatim">{{ side.source.verbatim_text[:420] }}{% if side.source.verbatim_text|length > 420 %}...{% endif %}</blockquote>
+        {# The hash is what makes this checkable rather than assertable. A
+           reader can take the clause text off the published PDF, hash it, and
+           see whether it is the text this finding was drawn from. #}
+        <div class="conflict-anchor t-micro t-mute">
+          <span class="t-caps">sha256</span>
+          <code class="t-code">{{ side.source.sha256 }}</code>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if report.conflicts|length > findings|length %}
+<p class="t-micro t-mute" style="margin-top:var(--s-3)">
+  Showing the {{ findings|length }} most serious of {{ report.conflicts|length }}.
+</p>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -26,7 +26,7 @@ from sanhita.eval.harness import run_eval
 from sanhita.ir.canonical import canonical_json
 from sanhita.ir.enums import RuleStatus
 from sanhita.ir.schema import Obligation
-from sanhita.metrics.coverage import ClauseClass, classify_clause, compute_coverage
+from sanhita.metrics.coverage import compute_coverage
 from sanhita.parse.clause_tree import parse_clause_tree
 
 __all__ = ["register"]

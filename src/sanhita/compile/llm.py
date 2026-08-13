@@ -315,7 +315,7 @@ class LLMExtractor:
 
         return (
             "no Anthropic credentials found.\n"
-            f"  Fix:  set SANHITA_ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY)\n"
+            "  Fix:  set SANHITA_ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY)\n"
             "  Or:   run `ant auth login`\n"
             "  Or:   run with --engine rules (deterministic, no API calls, $0)"
         )

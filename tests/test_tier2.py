@@ -11,7 +11,6 @@ import datetime as _dt
 import hashlib
 import json
 
-import pytest
 
 from tests.conftest import requires_corpus
 

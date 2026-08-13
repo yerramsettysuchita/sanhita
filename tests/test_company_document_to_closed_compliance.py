@@ -380,5 +380,5 @@ def test_evidence_hands_off_to_the_compliance_result(client, tmp_path):
     page = _plain(body)
 
     assert "See your compliance result" in page
-    assert f'href="/w/demo/gaps"' in body
+    assert 'href="/w/demo/gaps"' in body
     assert "Next" in page

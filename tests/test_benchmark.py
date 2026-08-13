@@ -7,7 +7,6 @@ says how many runs are behind each figure.
 
 from __future__ import annotations
 
-import pytest
 
 from tests.conftest import requires_corpus
 

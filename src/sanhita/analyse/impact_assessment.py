@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 
 from sanhita.analyse.burden import measure_burden
 from sanhita.analyse.conflicts import find_conflicts
-from sanhita.ir.enums import DayCount, DeadlineKind, Modality, RuleStatus
+from sanhita.ir.enums import DayCount, DeadlineKind, Modality
 from sanhita.ir.schema import Deadline, Obligation
 
 __all__ = [

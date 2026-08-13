@@ -12,7 +12,6 @@ every amendment reported no operational impact at all.
 
 from __future__ import annotations
 
-import datetime as _dt
 import re
 
 import pytest

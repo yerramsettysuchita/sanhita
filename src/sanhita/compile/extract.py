@@ -38,7 +38,6 @@ from sanhita.ir.enums import (
     ConditionKind,
     DeadlineKind,
     Modality,
-    RuleStatus,
     TriggerKind,
 )
 from sanhita.ir.schema import (

@@ -27,7 +27,6 @@ obligation id somebody put there.
 
 from __future__ import annotations
 
-import csv
 import datetime as _dt
 import io
 import json

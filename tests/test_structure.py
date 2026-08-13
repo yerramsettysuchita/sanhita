@@ -11,13 +11,12 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 
-import pytest
 
 from tests.conftest import requires_corpus
 
 from sanhita.analyse.burden import measure_burden
 from sanhita.analyse.fragility import assess_fragility
-from sanhita.analyse.references import ReferenceGraph, build_graph
+from sanhita.analyse.references import build_graph
 from sanhita.ir.enums import (
     Actor,
     DayCount,

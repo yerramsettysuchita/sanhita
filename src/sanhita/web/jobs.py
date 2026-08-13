@@ -26,7 +26,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from sanhita.certify.lifecycle import CertificationError, RuleRegistry
+from sanhita.certify.lifecycle import CertificationError
 from sanhita.compile.extract import ExtractionStatus, RuleExtractor
 from sanhita.parse.clause_tree import ClauseTree
 

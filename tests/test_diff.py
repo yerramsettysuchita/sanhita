@@ -16,7 +16,6 @@ import copy
 import datetime as _dt
 import hashlib
 
-import pytest
 
 from tests.conftest import requires_corpus
 

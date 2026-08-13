@@ -37,7 +37,7 @@ import datetime as _dt
 from dataclasses import dataclass
 from enum import Enum
 
-from sanhita.ir.enums import DeadlineKind, Modality, RuleStatus, TriggerKind
+from sanhita.ir.enums import DeadlineKind, Modality, RuleStatus
 from sanhita.ir.schema import Obligation
 
 __all__ = ["Applicability", "Verdict", "assess_applicability", "expected_occasions"]

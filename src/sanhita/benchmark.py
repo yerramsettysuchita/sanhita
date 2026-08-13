@@ -271,7 +271,7 @@ def format_report(report: BenchmarkReport) -> str:
     width = 78
     lines = [
         "=" * width,
-        f"  Sanhita pipeline benchmark",
+        "  Sanhita pipeline benchmark",
         f"  {report.document}",
         f"  {report.run_at.strftime('%d %b %Y, %H:%M')} UTC",
         "=" * width,

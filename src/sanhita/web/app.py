@@ -44,13 +44,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-logger = logging.getLogger("sanhita.web")
-
 from sanhita import CIRCULAR_ID
 from sanhita.auth import AuthError, UserStore
 from sanhita.auth import session as _session
 from sanhita.certify.lifecycle import CertificationError, RuleRegistry
-from sanhita.ir.enums import DayCount, DeadlineKind, RuleStatus
+from sanhita.ir.enums import DayCount, RuleStatus
 from sanhita.ir.schema import Deadline, Obligation, UnresolvedFieldError
 from sanhita.metrics.coverage import classify_clause, compute_coverage
 from sanhita.parse.clause_tree import ClauseTree, parse_clause_tree
@@ -66,6 +64,8 @@ from sanhita.workspace import (
     Workspace,
     WorkspaceStore,
 )
+
+logger = logging.getLogger("sanhita.web")
 
 HERE = Path(__file__).parent
 TEMPLATES = HERE / "templates"
@@ -1601,7 +1601,6 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
     @app.post("/w/{wid}/evidence")
     async def upload_evidence(request: Request, wid: str):
         """Replace the generated events with a firm's own filing export."""
-        from sanhita.execute.importer import read_csv
 
         from sanhita.execute.ingest import read_any
 

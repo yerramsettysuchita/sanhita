@@ -311,8 +311,6 @@ def test_a_task_cannot_close_without_naming_what_closed_it(client, tmp_path):
 @requires_corpus
 def test_one_gap_can_be_read_end_to_end_on_one_page(client, tmp_path):
     """An inspector following a closure should not have to visit four screens."""
-    from sanhita.cli_compile import _load_registry
-    from sanhita.ir.enums import RuleStatus
     from sanhita.remediate import RemediationStore
 
     _evidence(client, tmp_path, filed="")

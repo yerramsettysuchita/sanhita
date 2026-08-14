@@ -565,7 +565,7 @@ flowchart LR
     style SP fill:#F7EBD2,stroke:#C39A4E,color:#241a08
 ```
 
-| | Deterministic | Model assisted |
+| Property | Deterministic | Model assisted |
 |---|---|---|
 | Whole circular | **954 ms** | roughly 40 hours |
 | Cost | **$0.00** | real money |
@@ -813,18 +813,26 @@ Knowing that a rule binds *a stock broker* names a category of firm, not a part
 of one. Nobody can be handed that.
 
 ```mermaid
-flowchart LR
-    CL["clause 40.1.8, p95"] --> OB["SB-40.1.8-a"]
-    OB --> PR["Process:<br/>Margin shortfall reporting"]
-    PR --> FN["Function:<br/>Operations"]
-    FN --> SY["System:<br/>Margin engine"]
-    SY --> CT["Control:<br/>SOP-12"]
-    CT --> EV["Evidence:<br/>REPORT_FILING"]
+flowchart TD
+    CL["THE REGULATION<br/>clause 40.1.8, page 95"] --> OB["THE COMPILED RULE<br/>SB-40.1.8-a"]
+    OB --> PR["PROCESS<br/>Margin shortfall reporting"]
+    PR --> FN["FUNCTION, who owns it<br/>Operations"]
+    FN --> SY["SYSTEM, where it happens<br/>Margin engine"]
+    SY --> CT["CONTROL, the written procedure<br/>SOP-12"]
+    CT --> EV["EVIDENCE it produces<br/>REPORT_FILING"]
     EV --> CK{"Deterministic check"}
 
-    style CK fill:#E8E4F3,stroke:#7C5CD6,color:#1a1030
     style CL fill:#E3F0E4,stroke:#3E8E41,color:#0d2410
+    style OB fill:#E3F0E4,stroke:#3E8E41,color:#0d2410
+    style PR fill:#F7EBD2,stroke:#C39A4E,color:#241a08
+    style FN fill:#F7EBD2,stroke:#C39A4E,color:#241a08
+    style SY fill:#F7EBD2,stroke:#C39A4E,color:#241a08
+    style CT fill:#F7EBD2,stroke:#C39A4E,color:#241a08
+    style CK fill:#E8E4F3,stroke:#7C5CD6,color:#1a1030
 ```
+
+The green boxes are SEBI's, and are hashed and signed. The amber boxes are the
+firm's own words about how it is organised, and Sanhita never invents them.
 
 The clause, the obligation id and the evidence type are the real ones. The
 process, function, system and control are what a firm records about itself, so
@@ -866,11 +874,13 @@ reissued it in **February 2026**. Both PDFs are in the repository. This is a
 genuine amendment, not an edit applied by hand to make a demo work.
 
 ```mermaid
-xychart-beta
-    title "What changed between the two editions"
-    x-axis ["Renumbered", "Added", "Removed", "Modified"]
-    y-axis "Clauses" 0 --> 400
-    bar [376, 57, 39, 5]
+%%{init: {"pie": {"textPosition": 1.08}, "themeVariables": {"pieOuterStrokeWidth": "1px", "pieSectionTextSize": "15px", "pieLegendTextSize": "15px"}}}%%
+pie
+    title What changed between the two editions
+    "Renumbered, 376" : 376
+    "Added, 57" : 57
+    "Removed, 39" : 39
+    "Modified, 5" : 5
 ```
 
 | Change | Clauses | Share |
@@ -909,10 +919,10 @@ report says zero instead of inventing an effect.
 **So the demonstration signs the June edition first, and asks again.**
 
 ```mermaid
-flowchart LR
-    A["IA June 2025<br/>compiles to 124 rules"] --> B["An officer signs 25<br/>on clauses that later moved"]
+flowchart TD
+    A["IA June 2025<br/>compiles to 124 rules"] --> B["An officer signs 25 of them,<br/>on clauses that later moved"]
     B --> C{"IA February 2026<br/>arrives"}
-    C --> D["376 renumbered<br/>57 added, 39 removed, 5 rewritten"]
+    C --> D["376 renumbered, 57 added<br/>39 removed, 5 rewritten"]
     D --> E["25 signatures no longer<br/>cover their clause"]
     E --> F["82 actions a named<br/>person now owns"]
     F --> G["57 · assess a new clause"]
@@ -926,7 +936,7 @@ flowchart LR
     style J fill:#E3F0E4,stroke:#3E8E41,color:#0d2410
 ```
 
-| | |
+| What the run produced | Count |
 |---|---:|
 | Rules compiled from the June edition | 124 |
 | Rules signed on clauses this amendment moved | 25 |
@@ -1056,7 +1066,7 @@ Ranked **before** they do, from four measured signals:
 
 The results:
 
-| | Count |
+| Divergence band | Clauses |
 |---|---:|
 | Clauses examined | 807 |
 | Scoring above zero | 598 |
@@ -1365,7 +1375,7 @@ already in memory, which is what a person working the queue experiences all day.
 
 Read off the Fly logs for a real rollout, one machine in Mumbai, shared 2 vCPU:
 
-| | |
+| Deployment stage | Time |
 |---|---:|
 | Image pulled and prepared | 12.3 s |
 | Machine created and started | 18.5 s |

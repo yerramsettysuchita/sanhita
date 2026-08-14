@@ -31,6 +31,7 @@ import json
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import ClassVar
 
 from sanhita.execute.evidence import EvidenceStore
 from sanhita.execute.ingest import Candidate, Confidence
@@ -116,6 +117,55 @@ class Company:
     #: Printed wherever the profile is shown, because a synthetic company must
     #: never be mistakable for a real one.
     synthetic: bool = False
+
+    #: The fields the profile form is allowed to set. Everything else on this
+    #: class is owned elsewhere and must survive a save untouched.
+    #
+    # This exists because the save route used to rebuild the whole object from
+    # a form that carries six of these ten fields, and hand-list the other four
+    # to copy across. Two things went wrong with that, both silently:
+    #
+    #   A field added later was absent from the hand-list, so the next profile
+    #   save reset it. `setup_completed_at` was added for onboarding and left
+    #   out of the list, so correcting a registration number sent a firm back
+    #   to step three of setting up.
+    #
+    #   The object copied from was whatever `_company` returned, and on a
+    #   shared deployment reads fall through to the seeded demonstration firm.
+    #   A visitor with no profile of their own inherited that firm's history,
+    #   including `synthetic=True`, which printed "demonstration data" across a
+    #   real firm's real profile.
+    #
+    # Naming the form's half here, and updating in place rather than
+    # reconstructing, makes both impossible: a new field is preserved by
+    # default, because the form cannot reach it.
+    FORM_FIELDS: ClassVar[frozenset[str]] = frozenset(
+        {"name", "intermediary", "registration", "business_facts", "processes", "systems"}
+    )
+
+    def apply_profile_form(
+        self,
+        *,
+        name: str,
+        intermediary: IntermediaryType,
+        registration: str,
+        processes: list[str],
+        systems: list[str],
+        business_facts: dict[str, bool],
+    ) -> "Company":
+        """Update what the profile form owns, and nothing else.
+
+        In place on purpose. A method that returned a new object would put the
+        old problem back: something would have to decide what to carry across,
+        and that decision is what kept going wrong.
+        """
+        self.name = name.strip() or "Unnamed firm"
+        self.intermediary = intermediary
+        self.registration = registration.strip()
+        self.processes = list(processes)
+        self.systems = list(systems)
+        self.business_facts = dict(business_facts)
+        return self
 
     @property
     def is_configured(self) -> bool:

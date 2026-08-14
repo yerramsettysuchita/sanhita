@@ -1916,41 +1916,38 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         def lines(raw: str) -> list[str]:
             return [line.strip() for line in raw.splitlines() if line.strip()]
 
-        # Only this visitor's own profile may be inherited from.
+        # Update this visitor's own profile, or start a fresh one. Never
+        # reconstruct, and never inherit from somebody else's record.
         #
-        # Reads fall through to the demonstration state, so on the shared
-        # deployment `_company` returns the seeded firm to anybody who has not
-        # saved one yet. Carrying its fields forward meant a stranger who typed
-        # their own firm's name inherited the demo firm's history: its declared
-        # frameworks, its creation date, its finished onboarding, and worst of
-        # all `synthetic=True`, which put "this is demonstration data" on a real
-        # firm's real profile. The fields exist to survive an edit, not to be
-        # adopted from somebody else's record.
+        # Two rules, and `Company.FORM_FIELDS` is where they are written down.
+        #
+        # The form owns six of the ten fields. The other four are owned by the
+        # frameworks screen, by onboarding, and by the seeder. Updating in
+        # place means the form cannot reach them, so a field added to `Company`
+        # next month survives a save without anybody remembering to list it.
+        #
+        # And `existing` is read only when this visitor actually has a profile
+        # on disk. Reads fall through to the demonstration state, so on a
+        # shared deployment `_company` hands the seeded firm to anybody who has
+        # not saved one yet. Inheriting from it gave a stranger's real firm the
+        # demo firm's finished onboarding and its `synthetic=True`, which put
+        # "demonstration data" across a real profile.
         own_profile = _company_write_path(state)
-        existing = _company(state) if own_profile.exists() else None
-        firm = Company(
-            name=name.strip() or "Unnamed firm",
+        firm = _company(state) if own_profile.exists() else None
+        if firm is None:
+            firm = Company(name="Unnamed firm", created_at=_d.datetime.now(_d.timezone.utc))
+        firm.apply_profile_form(
+            name=name,
             intermediary=kind,
-            registration=registration.strip(),
+            registration=registration,
             processes=lines(processes),
             systems=lines(systems),
             business_facts={
                 fact.lstrip("-").strip(): not fact.strip().startswith("-")
                 for fact in lines(facts)
             },
-            # Which rulebooks apply is declared on its own screen, so saving the
-            # profile must not silently drop what was declared there.
-            frameworks=list(existing.frameworks) if existing else [],
-            # Nor whether onboarding was finished. This field was missing from
-            # the carry-over, so editing the firm's own profile a month later
-            # sent it back to step three of setting up, and every route that
-            # requires a set-up firm then refused it. Correcting a registration
-            # number is not un-onboarding.
-            setup_completed_at=existing.setup_completed_at if existing else None,
-            created_at=(existing.created_at if existing else None)
-            or _d.datetime.now(_d.timezone.utc),
-            synthetic=existing.synthetic if existing else False,
         )
+        firm.created_at = firm.created_at or _d.datetime.now(_d.timezone.utc)
         firm.save(_company_write_path(state))
         return RedirectResponse(f"/w/{wid}/company", status_code=303)
 

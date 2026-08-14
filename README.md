@@ -874,13 +874,13 @@ reissued it in **February 2026**. Both PDFs are in the repository. This is a
 genuine amendment, not an edit applied by hand to make a demo work.
 
 ```mermaid
-%%{init: {"pie": {"textPosition": 1.08}, "themeVariables": {"pieOuterStrokeWidth": "1px", "pieSectionTextSize": "15px", "pieLegendTextSize": "15px"}}}%%
+%%{init: {"pie": {"textPosition": 1.07}, "themeVariables": {"pieOuterStrokeWidth": "1px", "pieSectionTextSize": "14px", "pieLegendTextSize": "15px", "pieTitleTextSize": "18px"}}}%%
 pie
     title What changed between the two editions
     "Renumbered, 376" : 376
     "Added, 57" : 57
-    "Removed, 39" : 39
     "Modified, 5" : 5
+    "Removed, 39" : 39
 ```
 
 | Change | Clauses | Share |

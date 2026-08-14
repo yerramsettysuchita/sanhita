@@ -699,11 +699,12 @@ it in February 2026. Both PDFs are in `corpus/`. This is a genuine amendment,
 not an edit applied by hand.
 
 ```mermaid
-xychart-beta
-    title "What changed between the two editions"
-    x-axis ["Renumbered", "Added", "Removed", "Modified"]
-    y-axis "Clauses" 0 --> 400
-    bar [376, 57, 39, 5]
+pie
+    title What changed between the two editions
+    "Renumbered" : 376
+    "Added" : 57
+    "Removed" : 39
+    "Modified" : 5
 ```
 
 | | Clauses |
@@ -723,7 +724,33 @@ answer rather than a weakness, because the signed corpus is the stock broker
 circular and no investment adviser rule has been certified. The report says
 zero instead of inventing an effect.
 
-Reproduce with `pytest tests/test_real_amendment.py`.
+So the demonstration signs the June edition first and then asks the same
+question again, which is the run worth watching.
+
+```mermaid
+flowchart LR
+    A["IA June 2025<br/>compiles to 124 rules"] --> B["An officer signs 25<br/>on clauses that later moved"]
+    B --> C{"IA February 2026<br/>arrives"}
+    C --> D["376 renumbered<br/>57 added, 39 removed, 5 rewritten"]
+    D --> E["25 signatures no longer<br/>cover their clause"]
+    E --> F["82 actions a named<br/>person now owns"]
+    F --> G["57 assess a new clause"]
+    F --> H["20 repoint to the new number"]
+    F --> I["5 withdraw a deleted rule"]
+    F --> J["0 the tool closed<br/>by itself"]
+
+    style B fill:#F7EBD2,stroke:#C39A4E,color:#241a08
+    style E fill:#F7DEDA,stroke:#B4341F,color:#3d0f08
+    style F fill:#E8E4F3,stroke:#7C5CD6,color:#1a1030
+    style J fill:#E3F0E4,stroke:#3E8E41,color:#0d2410
+```
+
+The green box is the claim. A tool that re-certified those 25 rules for you
+would be faster and would be worthless, because the signature is the whole
+product and only a person can put one there.
+
+Reproduce with `pytest tests/test_real_amendment.py` for the diff, and
+`pytest tests/test_change_to_action.py` for the full run above.
 
 ### Impact assessment, before publication
 
@@ -802,6 +829,33 @@ each count as one.
 ---
 
 ## Coverage and its denominator
+
+Every number in this project narrows from the one before it, and this is the
+whole funnel in one picture.
+
+```mermaid
+flowchart TD
+    A["2,717 nodes in the clause tree"] --> B["1,720 in the main body"]
+    A --> X["997 annexure and appendix nodes"]
+    B --> C["1,070 carry a duty"]
+    B --> Y["650 excluded: recitals, headings, definitions"]
+    C --> D["807 produced a rule"]
+    C --> Z["263 the extractor could not reach"]
+    D --> E["126 have a signed rule"]
+    D --> W["681 still awaiting a reviewer"]
+
+    style C fill:#EFE7FB,stroke:#7C5CD6,color:#1a1030
+    style D fill:#E3F0E4,stroke:#3E8E41,color:#0d2410
+    style E fill:#F7EBD2,stroke:#C39A4E,color:#241a08
+    style X fill:#EDEDF2,stroke:#6B6B7B,color:#1a1a22
+    style Y fill:#EDEDF2,stroke:#6B6B7B,color:#1a1a22
+    style Z fill:#EDEDF2,stroke:#6B6B7B,color:#1a1a22
+    style W fill:#EDEDF2,stroke:#6B6B7B,color:#1a1a22
+```
+
+The grey boxes are the ones that matter to a sceptical reader, because they are
+what a less careful tool would quietly drop from its denominator to make its
+percentage look better.
 
 ```
                 clauses with at least one CERTIFIED obligation

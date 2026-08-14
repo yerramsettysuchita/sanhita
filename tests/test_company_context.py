@@ -68,6 +68,9 @@ def _set_up(client, name="ABC Securities Pvt Ltd"):
     client.post(
         "/w/demo/company/frameworks", data={"framework": "demo"}, follow_redirects=True
     )
+    # Step three. Without it the firm exists but has not finished onboarding,
+    # and every route that records something for it now refuses.
+    client.post("/w/demo/setup/complete", follow_redirects=True)
 
 
 # ------------------------------------------------- the firm's own screens

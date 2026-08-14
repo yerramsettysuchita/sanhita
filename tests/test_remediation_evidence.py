@@ -14,7 +14,7 @@ import re
 
 import pytest
 
-from tests.conftest import requires_corpus, sign_in
+from tests.conftest import complete_setup, requires_corpus, sign_in
 
 
 @pytest.fixture()
@@ -32,6 +32,10 @@ def client(corpus_pdf, tmp_path, monkeypatch):
     # Compliance actions record who did them, so the journey these
     # tests walk needs an authenticated officer behind it.
     sign_in(client)
+    # And a firm that has finished onboarding. The routes now hold the same
+    # order the screens walk a visitor through, so a POST to /assess before
+    # setup is complete is refused rather than silently accepted.
+    complete_setup(client)
     return client
 
 

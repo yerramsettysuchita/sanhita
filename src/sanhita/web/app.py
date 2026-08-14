@@ -1,13 +1,22 @@
 """The certification workbench.
 
 A local FastAPI app over the same store the CLI writes. No build step, no npm,
-no CDN. Every asset is served from disk so the whole thing runs offline in a
-room with no network.
+no CDN. Every asset is served from disk, so every screen renders in a room with
+no network.
 
-Four screens, one spine: the source clause on the left exactly as SEBI published
-it, the compiled artifact on the right. The workbench adds the interaction the
-product turns on. Hover a compiled field, see the words that justified it light
-up in the regulation.
+**One deliberate exception, and it is worth naming here rather than leaving a
+reader to find it.** ``POST /w/{wid}/discover`` reaches sebi.gov.in, and only
+when a person presses the button. Nothing is fetched on page load, there is no
+scheduler behind it, and nothing it finds enters the rulebook by being found.
+So the compliance engine is offline in the strict sense that no rule is ever
+evaluated with a network call in the loop; the application as a whole offers
+one outbound lookup that a human asks for. Saying "runs offline" without that
+sentence was true of the engine and false of the product.
+
+Many screens now, one spine: the source clause on the left exactly as SEBI
+published it, the compiled artifact on the right. The workbench adds the
+interaction the product turns on. Hover a compiled field, see the words that
+justified it light up in the regulation.
 
 **Anyone can bring their own document.** A workspace is one person's copy of the
 whole pipeline: their PDF, their parsed tree, their proposed rules, their
@@ -1398,6 +1407,12 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
 
     @app.post("/w/{wid}/compile")
     def start_compile(request: Request, wid: str, engine: str = Form("rules")):
+        # Authoring the rulebook is a write, so it needs an account like every
+        # other one. Certifying was gated from the start and compiling was not,
+        # which left the odd position that a stranger could not sign a rule but
+        # could start the job that draws a thousand of them and rewrites the
+        # store underneath the person reviewing it. Reading stays open.
+        _acting_officer(request, "Compiling a circular into proposed rules")
         state = bench(wid, request)
         if not state.quality.can_compile:
             raise HTTPException(
@@ -1432,14 +1447,20 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         return JSONResponse(job.to_json())
 
     @app.post("/w/{wid}/cancel")
-    def cancel_compile(wid: str):
+    def cancel_compile(request: Request, wid: str):
+        # Stopping somebody else's compilation is a write to shared state.
+        _acting_officer(request, "Cancelling a compilation")
         job = jobs.get(wid)
         if job is not None:
             job.cancel()
         return RedirectResponse(f"/w/{wid}", status_code=303)
 
     @app.post("/w/{wid}/delete")
-    def delete_document(wid: str):
+    def delete_document(request: Request, wid: str):
+        # The worked example is already protected by `workspaces.delete`, but
+        # an uploaded circular was not: any visitor could remove a document
+        # somebody else had brought in and was part way through certifying.
+        _acting_officer(request, "Deleting a circular")
         job = jobs.get(wid)
         if job is not None and job.running:
             raise HTTPException(409, "A compile is still running for this document.")
@@ -1563,6 +1584,15 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         from sanhita.execute import WEEKENDS_ONLY, RuleEngine
 
         state = bench(wid, request)
+
+        # Whose position is this? Asked before anything else, because "there is
+        # no firm here" and "this firm has not finished setting up" are more
+        # basic refusals than "the rulebook is empty" or "there are no records".
+        # Running the data checks first meant a POST with no company profile at
+        # all came back saying the firm had provided no records, which named
+        # the wrong problem and sent the reader to the wrong screen.
+        _require_declared(_company(state), state, "record a position against")
+
         obligations = state.registry.all_current()
         certified = [o for o in obligations if o.status is RuleStatus.CERTIFIED]
         if not certified:
@@ -1579,8 +1609,6 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
                 "This firm has not provided any compliance records, so there is "
                 "nothing to assess. Upload your evidence first.",
             )
-
-        _require_declared(_company(state), state, "record a position against")
 
         report = RuleEngine(WEEKENDS_ONLY).run(
             obligations, evidence, as_of=_d.date.today()
@@ -1888,7 +1916,18 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         def lines(raw: str) -> list[str]:
             return [line.strip() for line in raw.splitlines() if line.strip()]
 
-        existing = _company(state)
+        # Only this visitor's own profile may be inherited from.
+        #
+        # Reads fall through to the demonstration state, so on the shared
+        # deployment `_company` returns the seeded firm to anybody who has not
+        # saved one yet. Carrying its fields forward meant a stranger who typed
+        # their own firm's name inherited the demo firm's history: its declared
+        # frameworks, its creation date, its finished onboarding, and worst of
+        # all `synthetic=True`, which put "this is demonstration data" on a real
+        # firm's real profile. The fields exist to survive an edit, not to be
+        # adopted from somebody else's record.
+        own_profile = _company_write_path(state)
+        existing = _company(state) if own_profile.exists() else None
         firm = Company(
             name=name.strip() or "Unnamed firm",
             intermediary=kind,
@@ -1902,6 +1941,12 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
             # Which rulebooks apply is declared on its own screen, so saving the
             # profile must not silently drop what was declared there.
             frameworks=list(existing.frameworks) if existing else [],
+            # Nor whether onboarding was finished. This field was missing from
+            # the carry-over, so editing the firm's own profile a month later
+            # sent it back to step three of setting up, and every route that
+            # requires a set-up firm then refused it. Correcting a registration
+            # number is not un-onboarding.
+            setup_completed_at=existing.setup_completed_at if existing else None,
             created_at=(existing.created_at if existing else None)
             or _d.datetime.now(_d.timezone.utc),
             synthetic=existing.synthetic if existing else False,
@@ -2880,9 +2925,29 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         Without this check a crafted request could raise a task, approve a
         plan, or record a position for a firm against a circular somebody else
         uploaded this morning, and the firm's audit trail would carry it.
+
+        The `firm is None` arm used to return silently, which meant the whole
+        guard was skipped for the case it most needed to cover. A POST to
+        `/assess` with no company profile on the installation recorded an
+        assessment against nothing, and the lifecycle screens then opened on
+        it. The screens walk a visitor through company, framework and records
+        in that order; the routes have to hold the same order, or the sequence
+        is a suggestion rather than a rule.
         """
         if firm is None:
-            return
+            raise HTTPException(
+                400,
+                f"No company profile exists on this installation, so there is "
+                f"no firm to {doing} this framework. Record the company first.",
+            )
+        if firm.setup_completed_at is None:
+            raise HTTPException(
+                400,
+                f"{firm.name} has not finished setting up, so it cannot yet "
+                f"{doing} this framework. Setting up is three answers: who the "
+                "firm is, which rulebooks govern it, and what records it has. "
+                "Finish those on the company screen first.",
+            )
         declared = set(getattr(firm, "frameworks", []) or [])
         if declared and state.workspace.id not in declared:
             raise HTTPException(
@@ -2969,9 +3034,15 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         never says there is: the answer is as fresh as the request and no
         fresher. What comes back is a list of titles, dates and links, and
         nothing on it enters the rulebook by being found.
+
+        Gated on an account even though it persists nothing, because it is the
+        one route that reaches outside this machine. An open endpoint that
+        makes an outbound request on demand is a request amplifier pointed at
+        the regulator's own site, and the cost of closing it is one sign-in.
         """
         from sanhita.discover import DiscoveryRefused, discover, fetch_official
 
+        _acting_officer(request, "Checking what SEBI is listing")
         state = bench(wid, request)
         signed_in = current_user(request)
         known = workspaces.visible_to(signed_in.id if signed_in else None)

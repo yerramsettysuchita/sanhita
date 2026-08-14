@@ -20,11 +20,15 @@ The id is derived from the document's own bytes, so uploading the same PDF twice
 lands in the same workspace instead of silently creating a second copy that
 would then disagree with the first.
 
-**On authentication.** A workspace carries an ``owner`` field that is currently
-always ``None``, meaning "anyone using this machine". When sign-in is added, the
-owner becomes the authenticated user id and ``WorkspaceStore.visible_to`` is the
-one place that has to learn about it. No route, template or pipeline stage needs
-to change.
+**On authentication.** A workspace carries an ``owner``, which is the id of the
+account that uploaded it. ``WorkspaceStore.visible_to`` is the one place that
+reads it, which is what kept sign-in from touching any route, template or
+pipeline stage when it landed.
+
+Workspaces carrying no owner predate sign-in and stay visible to everyone, and
+``may_open`` says so explicitly. That is deliberate rather than an oversight:
+there is no owner recorded to restore, and the alternative is a document
+nobody can reach.
 """
 
 from __future__ import annotations

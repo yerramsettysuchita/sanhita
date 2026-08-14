@@ -9,9 +9,17 @@
 # container is self-sufficient and a reviewer who opens the URL sees a real
 # rulebook rather than an empty state. They are about 12 MB together.
 #
-# **Nothing is fetched at runtime.** No CDN, no font service, no model API. The
-# whole product was built to run offline in a room with no network, and the
-# deployment does not quietly undo that.
+# **No third-party service is required at runtime.** No CDN, no font service, no
+# model API, and no network call anywhere in the path that evaluates a rule.
+# Every screen renders in a room with no network, and the deployment does not
+# quietly undo that.
+#
+# There is exactly one outbound request in the whole product, and it is worth
+# stating here rather than letting a reader discover it: "Check SEBI now" reads
+# sebi.gov.in's own circulars listing when a person presses the button. Not on
+# page load, not on a schedule, and nothing it returns enters the rulebook by
+# being found. An image that claimed "nothing is fetched at runtime" while
+# shipping that route was overstating the case.
 
 FROM python:3.12-slim AS base
 

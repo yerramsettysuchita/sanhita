@@ -94,3 +94,45 @@ def sign_in(client, *, name: str = "A Named Officer", email: str = "officer@exam
         data={"name": name, "email": email, "password": "a-long-enough-password"},
         follow_redirects=True,
     )
+
+
+def complete_setup(
+    client,
+    *,
+    wid: str = "demo",
+    name: str = "ABC Securities Pvt Ltd",
+    intermediary: str = "STOCK_BROKER",
+):
+    """Walk the firm through onboarding, because the routes now require it.
+
+    Setting up is three answers, in order: who the firm is, which SEBI
+    rulebooks govern it, and what records it has. The screens have always asked
+    for them in that sequence. The routes did not enforce it, so a test could
+    POST straight to ``/assess`` and record a position for a firm that did not
+    exist, and many of them did exactly that.
+
+    Enforcing it made the routes agree with the screens and broke every test
+    that had been taking the short cut. This helper is that short cut removed:
+    it does what a person does, so a test about remediation is about
+    remediation rather than about how little setup it can get away with.
+
+    Tests asserting the refusal itself deliberately do not call this.
+    """
+    client.post(
+        f"/w/{wid}/company/save",
+        data={"name": name, "intermediary": intermediary},
+        follow_redirects=True,
+    )
+    # The field is ``framework``, singular, because the form posts one entry
+    # per checked rulebook and the route reads them with ``getlist``.
+    client.post(
+        f"/w/{wid}/company/frameworks",
+        data={"framework": wid},
+        follow_redirects=True,
+    )
+    done = client.post(f"/w/{wid}/setup/complete", follow_redirects=False)
+    assert done.status_code == 303, (
+        f"onboarding did not complete: {done.status_code}. A test relying on "
+        "this helper would otherwise fail somewhere far from the cause."
+    )
+    return done

@@ -20,6 +20,8 @@ import datetime as _dt
 
 import pytest
 
+from tests.conftest import sign_in
+
 # A SEBI listing page, in the shape the real one has: document links wrapped in
 # table markup, dates beside them, and a good deal of navigation furniture that
 # must not end up in the result.
@@ -277,6 +279,9 @@ def test_a_failed_check_is_shown_as_a_failure(tmp_path, corpus_pdf, monkeypatch)
     store = tmp_path / "rules.json"
     shutil.copy(corpus_pdf.parent.parent / ".sanhita" / "rules.json", store)
     client = TestClient(create_app(corpus_pdf, store=store))
+    # Reaching outside this machine is a write in the sense that matters: it
+    # is the one route that leaves the box, so it needs a name behind it.
+    sign_in(client)
 
     import sanhita.discover as discovery
 

@@ -25,7 +25,7 @@ import re
 
 import pytest
 
-from tests.conftest import requires_corpus, sign_in
+from tests.conftest import complete_setup, requires_corpus, sign_in
 
 
 @pytest.fixture()
@@ -42,6 +42,32 @@ def client(corpus_pdf, tmp_path, monkeypatch):
     client = TestClient(create_app(corpus_pdf, store=store))
     # Compliance actions record who did them, so the journey these
     # tests walk needs an authenticated officer behind it.
+    sign_in(client)
+    # And a firm that has finished onboarding. The routes now hold the same
+    # order the screens walk a visitor through, so a POST to /assess before
+    # setup is complete is refused rather than silently accepted.
+    complete_setup(client)
+    return client
+
+
+@pytest.fixture()
+def onboarding(corpus_pdf, tmp_path, monkeypatch):
+    """Signed in, but deliberately still setting up.
+
+    The tests below this fixture are *about* the three step sequence, so they
+    have to start before it has been walked. Everything else in this file wants
+    a firm that has finished, which is what ``client`` gives them.
+    """
+    import shutil
+
+    from fastapi.testclient import TestClient
+
+    from sanhita.web.app import create_app
+
+    monkeypatch.setenv("SANHITA_SIGNING_KEY", "a-test-only-key")
+    store = tmp_path / "rules.json"
+    shutil.copy(corpus_pdf.parent.parent / ".sanhita" / "rules.json", store)
+    client = TestClient(create_app(corpus_pdf, store=store))
     sign_in(client)
     return client
 
@@ -77,8 +103,8 @@ def _evidence(client, tmp_path, filed="2026-04-02"):
 
 
 @requires_corpus
-def test_step_one_offers_nothing_but_naming_the_firm(client):
-    page = _plain(client.get("/w/demo/company").text)
+def test_step_one_offers_nothing_but_naming_the_firm(onboarding):
+    page = _plain(onboarding.get("/w/demo/company").text)
 
     assert "Step 1 of 3, setting up" in page
     assert "Firm name" in page
@@ -93,11 +119,11 @@ def test_step_one_offers_nothing_but_naming_the_firm(client):
 
 
 @requires_corpus
-def test_step_two_offers_nothing_but_the_framework_question(client):
-    client.post(
+def test_step_two_offers_nothing_but_the_framework_question(onboarding):
+    onboarding.post(
         "/w/demo/company/save", data={"name": "ABC Securities"}, follow_redirects=True
     )
-    page = _plain(client.get("/w/demo/company").text)
+    page = _plain(onboarding.get("/w/demo/company").text)
 
     assert "Step 2 of 3, setting up" in page
     assert "Which SEBI rulebooks apply to ABC Securities" in page
@@ -105,15 +131,15 @@ def test_step_two_offers_nothing_but_the_framework_question(client):
 
 
 @requires_corpus
-def test_step_three_offers_nothing_but_the_evidence_upload(client):
+def test_step_three_offers_nothing_but_the_evidence_upload(onboarding):
     """Saving a framework used to drop somebody onto the dashboard mid-setup."""
-    client.post(
+    onboarding.post(
         "/w/demo/company/save", data={"name": "ABC Securities"}, follow_redirects=True
     )
-    client.post(
+    onboarding.post(
         "/w/demo/company/frameworks", data={"framework": "demo"}, follow_redirects=True
     )
-    page = _plain(client.get("/w/demo/company").text)
+    page = _plain(onboarding.get("/w/demo/company").text)
 
     assert "Step 3 of 3, setting up" in page
     assert "Bring your compliance evidence" in page
@@ -121,15 +147,15 @@ def test_step_three_offers_nothing_but_the_evidence_upload(client):
 
 
 @requires_corpus
-def test_the_overview_appears_only_once_setup_is_finished(client):
-    client.post(
+def test_the_overview_appears_only_once_setup_is_finished(onboarding):
+    onboarding.post(
         "/w/demo/company/save", data={"name": "ABC Securities"}, follow_redirects=True
     )
-    client.post(
+    onboarding.post(
         "/w/demo/company/frameworks", data={"framework": "demo"}, follow_redirects=True
     )
-    client.post("/w/demo/setup/complete", follow_redirects=True)
-    page = _plain(client.get("/w/demo/company").text)
+    onboarding.post("/w/demo/setup/complete", follow_redirects=True)
+    page = _plain(onboarding.get("/w/demo/company").text)
 
     assert "Stage 1 of 5" in page
     assert "setting up" not in page

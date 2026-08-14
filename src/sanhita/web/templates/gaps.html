@@ -254,9 +254,18 @@
       <span class="status status-{{ 'rejected' if f.outcome.value == 'MISSING' else 'proposed' }}">
         {% if f.outcome.value == 'NO_EVIDENCE' %}UNVERIFIED{% else %}{{ f.outcome.value }}{% endif %}
       </span>
-      <div class="t-micro t-mute">{{ f.severity }} severity</div>
+      {#
+        A duty with no record either way ranks high because not knowing is a
+        real problem, but calling it "high severity" beside "not a proven
+        breach" invites the obvious question: how can something be severe if
+        it is not a breach? It is not severity, it is how badly the answer is
+        wanted. The ordering is unchanged; only the word is.
+      #}
       {% if f.outcome.value == 'NO_EVIDENCE' %}
+      <div class="t-micro t-mute">{{ f.severity }} verification priority</div>
       <div class="t-micro t-mute">not a proven breach</div>
+      {% else %}
+      <div class="t-micro t-mute">{{ f.severity }} severity</div>
       {% endif %}
     </div>
 

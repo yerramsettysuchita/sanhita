@@ -27,7 +27,6 @@ themes/
 .DS_Store
 Thumbs.db
 *.md
-!README.md
 
 # Uploaded workspaces are one person's documents on one machine. They must not
 # be copied into an image that other people will open.

@@ -29,7 +29,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 # Dependencies first, so a code change does not reinstall the world.
-COPY pyproject.toml README.md ./
+COPY pyproject.toml ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir ".[web]"
 

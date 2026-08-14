@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "sanhita"
 version = "0.1.0"
 description = "A regulation compiler for India's securities markets. Probabilistic in the loop, deterministic at the core, human certified at the boundary."
-readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 

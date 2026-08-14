@@ -39,7 +39,16 @@ RUN pip install --no-cache-dir ".[web]"
 COPY corpus/ ./corpus/
 COPY .sanhita/ ./.sanhita/
 COPY ui/ ./ui/
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
+# chmod is not belt and braces, it is the fix.
+#
+# `core.fileMode` is false on a Windows checkout, so git recorded this script
+# as 100644 and never noticed. Docker building from a Windows context marks it
+# executable anyway, so a deploy from that machine worked; CI checks out on
+# Linux, gets 644, and the container died with "failed to spawn command:
+# /app/docker-entrypoint.sh: Permission denied", restarted ten times and
+# stopped. The mode is fixed in git as well, and this line means a future
+# checkout on any platform cannot reintroduce it.
+COPY --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh
 
 # The demonstration, built rather than copied.
 #

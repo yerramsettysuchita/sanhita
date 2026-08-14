@@ -873,7 +873,7 @@ SEBI issued a Master Circular for Investment Advisers in **June 2025** and
 reissued it in **February 2026**. Both PDFs are in the repository. This is a
 genuine amendment, not an edit applied by hand to make a demo work.
 
-**What changed between the two editions**
+<p align="center"><b>What changed between the two editions</b></p>
 
 ```mermaid
 %%{init: {"pie": {"textPosition": 1.11}, "themeVariables": {"pieOuterStrokeWidth": "1px", "pieSectionTextSize": "14px", "pieLegendTextSize": "15px"}}}%%

@@ -10,6 +10,23 @@ hash.
 
 > Probabilistic in the loop. Deterministic at the core. Human certified at the boundary.
 
+On the SEBI Master Circular for Stock Brokers, a 399 page document, Sanhita
+parses 1,720 clauses, finds the 1,070 that impose a duty, compiles 1,377 typed
+obligations out of them, and holds 183 that a named officer has signed and
+version locked. The whole circular compiles in under a second and costs nothing
+to compile, because no language model runs at that point or at any point after
+it. Accuracy against a forty clause gold set is published in full, including the
+seven arguable labels that were all settled against the machine.
+
+A real SEBI amendment has been carried the whole way through. The Investment
+Advisers Master Circular of June 2025, compared against its February 2026
+reissue, renumbered 376 clauses and broke 25 signatures, and Sanhita turned that
+into 82 pieces of work a named person now owns. It closed none of them by
+itself, which is the point rather than a shortcoming.
+
+It is live at **https://sanhita.fly.dev**, and it runs the same way with the
+network unplugged.
+
 Built for the **SEBI Securities Market TechSprint 2026**, Problem Statement 2,
 *Agentic Compliance, From Regulatory Text to Operational Action*.
 
@@ -268,6 +285,13 @@ Measured on the SEBI Master Circular for Stock Brokers, 17 June 2025.
 | Cost to compile it | **$0.00** |
 | Tests | **990** |
 
+The two clause counts are both honest, and they answer different questions. The
+tree holds 2,717 nodes, of which 996 sit inside annexures and one is an
+appendix. Coverage is quoted over the 1,720 that make up the main body, so a
+form reproduced at the back of the circular cannot quietly inflate the
+denominator. The benchmark reports the tree it actually built, which is why it
+says 2,717 where this table says 1,720.
+
 ### Coverage as three numbers rather than one
 
 ```mermaid
@@ -522,9 +546,14 @@ Append only, hash chained. Every entry carries the hash of the one before it.
 `sanhita audit` walks the chain and prints its head. If an entry has been
 altered, the chain stops verifying and the screen says which entry and why.
 
-One thing it cannot currently prove: the HMAC key those 183 signatures were
-made with is lost, so `/audit/verify` reports 183 checked and 0 valid. The
-chain itself is unbroken. The Facts page says so on screen.
+There is one thing the ledger cannot currently prove, and it is recorded here
+rather than left for a reviewer to discover. The HMAC key those 183 signatures
+were made with has been lost, so `/audit/verify` reports 183 checked and 0
+valid. The rules, their clause hashes and the chain itself are all intact and
+all still verify; what is gone is the separate cryptographic proof that the
+signed bytes are unaltered. Recomputing the signatures under a new key would
+turn that endpoint green while quietly making a different claim, so it has not
+been done, and the Facts page states the position on screen.
 
 ---
 
@@ -557,8 +586,10 @@ flowchart TD
 Run the real rulebook against a firm that has filed nothing and you get **30
 findings**, 15 not applicable and 138 undetermined. Before this, zero.
 
-Every one of the 30 is `NO_EVIDENCE`. **Breaches: zero.** The firm has not been
-caught doing anything wrong; it has 30 duties nobody can say either way about.
+The split inside those 30 is the part worth reading. Every one of them is
+`NO_EVIDENCE` and not one is a breach, because the firm has not been caught
+doing anything wrong. It has 30 duties that nobody can speak to either way, and
+the screen offers the upload rather than an accusation.
 
 `UNDETERMINED` is never counted as a pass. A tool that looks safer the less it
 understands is worse than no tool.
@@ -710,9 +741,12 @@ Draft amendment to clause 15.10.1.7, deadline T+5 becomes T+1 business day
   Actors affected                               stock broker
 ```
 
-Clauses 15.10.1.7, 23.1.1 and 48.8 are today a duplication: three copies of one
-duty at five working days. Shorten one and the duplication becomes a
-disagreement, and a drafter sees that before publishing rather than after.
+That example is worth printing because of what the two new contradictions
+actually are. Clauses 15.10.1.7, 23.1.1 and 48.8 are today a duplication, three
+copies of one duty all sitting at five working days. Shorten one of them and
+the duplication turns into a disagreement, and a drafter sees that before
+publishing rather than hearing about it afterwards from a firm that read the
+wrong copy.
 
 Every number comes from a module written for another purpose, which is what
 makes it trustworthy. The contradiction count comes from the same detector that

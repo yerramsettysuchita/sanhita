@@ -16,8 +16,6 @@ import hashlib
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.certify.lifecycle import RuleRegistry
 from sanhita.ir.enums import (
     Actor,
@@ -35,6 +33,7 @@ from sanhita.ir.schema import (
     SourceAnchor,
     Trigger,
 )
+from tests.conftest import requires_corpus
 
 KEY = "a-test-signing-key"
 

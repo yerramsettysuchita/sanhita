@@ -2126,8 +2126,9 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
 
     @app.get("/evidence-template.csv")
     def evidence_template():
-        from sanhita.execute.importer import TEMPLATE_CSV
         from fastapi.responses import PlainTextResponse
+
+        from sanhita.execute.importer import TEMPLATE_CSV
 
         return PlainTextResponse(
             TEMPLATE_CSV,
@@ -2978,7 +2979,7 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
             html = fetch_official()
             report = discover(html, known=known)
         except DiscoveryRefused as exc:
-            from sanhita.discover import Discovery, SEBI_CIRCULARS
+            from sanhita.discover import SEBI_CIRCULARS, Discovery
 
             report = Discovery(
                 checked_at=_dt.datetime.now(_dt.timezone.utc),

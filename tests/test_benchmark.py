@@ -7,10 +7,8 @@ says how many runs are behind each figure.
 
 from __future__ import annotations
 
-
-from tests.conftest import requires_corpus
-
 from sanhita.benchmark import BenchmarkReport, Measurement, format_report
+from tests.conftest import requires_corpus
 
 
 def test_a_single_run_is_not_dressed_up_as_an_average():

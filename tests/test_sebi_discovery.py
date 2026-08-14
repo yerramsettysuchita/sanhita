@@ -20,7 +20,6 @@ import datetime as _dt
 
 import pytest
 
-
 # A SEBI listing page, in the shape the real one has: document links wrapped in
 # table markup, dates beside them, and a good deal of navigation furniture that
 # must not end up in the result.
@@ -199,8 +198,9 @@ def test_a_link_off_sebi_inside_the_listing_is_ignored():
 
 
 def test_the_default_source_is_sebis_own_listing():
-    from sanhita.discover import OFFICIAL_HOSTS, SEBI_CIRCULARS
     from urllib.parse import urlparse
+
+    from sanhita.discover import OFFICIAL_HOSTS, SEBI_CIRCULARS
 
     assert urlparse(SEBI_CIRCULARS).hostname in OFFICIAL_HOSTS
     assert SEBI_CIRCULARS.startswith("https://")

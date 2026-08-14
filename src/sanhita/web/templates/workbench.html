@@ -83,7 +83,7 @@
       <form class="resolve" method="post" action="{{ base }}/clause/{{ clause_id }}/resolve">
         <input type="hidden" name="obligation_id" value="{{ rule.id }}">
         <p class="t-small">
-          The clause says <span class="t-mono">â€œ{{ rule.quote('deadline') or '' }}â€</span>
+          The clause says <span class="t-mono">“{{ rule.quote('deadline') or '' }}”</span>
           and never states which kind of days it means. Does the
           {{ rule.deadline.offset_days }} day offset count working days or
           calendar days? Sanhita will not choose for you.

@@ -8,6 +8,8 @@ Obligation IR it is a grouping and a comparison.
 Deterministic throughout. No model is consulted.
 """
 
+from sanhita.analyse.burden import ActorBurden, BurdenReport, measure_burden
+from sanhita.analyse.calendar import Due, Schedule, build_schedule
 from sanhita.analyse.conflicts import (
     Confidence,
     Conflict,
@@ -15,8 +17,6 @@ from sanhita.analyse.conflicts import (
     ConflictReport,
     find_conflicts,
 )
-from sanhita.analyse.burden import ActorBurden, BurdenReport, measure_burden
-from sanhita.analyse.calendar import Due, Schedule, build_schedule
 from sanhita.analyse.divergence import (
     DivergenceReport,
     DivergenceRisk,

@@ -111,8 +111,8 @@ def test_the_chain_view_is_a_company_screen_too(client, tmp_path):
     _set_up(client)
     # A task needs a finding of record, which needs records and an assessment.
     from sanhita.cli_compile import _load_registry as _lr
-    from sanhita.ir.enums import RuleStatus as _RS
     from sanhita.ir.enums import DeadlineKind as _DK
+    from sanhita.ir.enums import RuleStatus as _RS
 
     recurring = next(
         r

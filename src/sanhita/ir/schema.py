@@ -214,13 +214,19 @@ class Deadline(BaseModel):
     Between them, the four kinds and these fields encode every deadline shape
     the master circular actually uses:
 
-      "T+1 working day"        RELATIVE, offset_days=1, business_days=True,
-                               anchor_event='trade.date'
+      "T+1 working day"        RELATIVE, offset_days=1, anchor_event='trade.date',
+                               business_days=DayCount.BUSINESS
       "end of day T"           END_OF_PERIOD, period='DAY', offset_days=0
-      "within 7 days of the    RELATIVE, offset_days=7, business_days=False,
-       event"                  anchor_event=<the event>
+      "within 7 calendar days  RELATIVE, offset_days=7, anchor_event=<the event>,
+       of the event"           business_days=DayCount.CALENDAR
+      "T+5 day"                RELATIVE, offset_days=5, anchor_event='trade.date',
+                               business_days=DayCount.UNSPECIFIED
       "quarterly"              END_OF_PERIOD, period='QUARTER'
       "upon demand"            ON_DEMAND
+
+    ``business_days`` is a :class:`DayCount`, not a bool. Every member of it is
+    truthy, so anything testing it with a bare ``if`` will report the third
+    state as the first.
     """
 
     model_config = _VALUE_OBJECT
@@ -324,7 +330,9 @@ class Condition(BaseModel):
     field below used to claim that it did. What the extractor puts in
     ``expression`` is the clause's own words describing when the obligation
     applies, in prose. Across the stock broker circular that is 931 conditions
-    of which about 5% contain so much as a comparator and a number.
+    of which 94, or 10.1%, contain so much as a comparator and a number. That
+    share is measured with ``_NUMERIC_CONDITION`` in ``analyse/divergence.py``,
+    the same test the divergence screen uses to call a condition a judgement.
 
     The distinction matters because it bounds what can be built on top. A
     condition in prose is enough to show a reviewer why a rule might not apply

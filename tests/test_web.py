@@ -1,6 +1,6 @@
 ﻿"""Route smoke tests and the provenance-highlighting core.
 
-The highlighting tests do not need the corpus and always run â€” they are the
+The highlighting tests do not need the corpus and always run — they are the
 guarantee that the workbench's central interaction cannot silently drift from
 the spans that were actually signed.
 """
@@ -11,10 +11,8 @@ import os
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.web.highlight import segment_text
-
+from tests.conftest import requires_corpus
 
 # --------------------------------------------------------------- highlighting
 
@@ -42,7 +40,7 @@ def test_each_segment_carries_the_fields_covering_it():
 
 
 def test_overlapping_spans_both_survive():
-    """recipient nests inside object â€” a naive wrap would lose one of them."""
+    """recipient nests inside object — a naive wrap would lose one of them."""
     text = "shall report to the Stock Exchange the short-collection"
     spans = {"outer": (6, 34), "inner": (20, 34)}
     segments = segment_text(text, spans)
@@ -128,7 +126,7 @@ def test_no_external_requests_anywhere(client):
 def test_there_is_no_search_or_question_box(client):
     """The product thesis forbids an ask-the-regulation surface.
 
-    Checked against input *affordances*, not against substrings â€” the corpus
+    Checked against input *affordances*, not against substrings — the corpus
     itself contains clause titles like "Frequently Asked Questions", and a
     naive text search flags those as a chatbot.
     """

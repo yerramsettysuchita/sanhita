@@ -34,9 +34,10 @@ jobs:
           SANHITA_SIGNING_KEY: ci-only-not-a-production-key
         run: pytest -q
 
-      # The corpus PDF is gitignored, because a SEBI circular is not ours to
-      # redistribute. Every test that needs it skips rather than fails, so CI is
-      # green on a clean checkout and the count below shows how much was skipped.
+      # Three circulars are committed now: the stock broker master circular the
+      # product is a view of, and the two Investment Adviser editions the
+      # amendment comparison needs. So most of what used to skip in CI now runs.
+      # The rest still skip rather than fail, and this reports how many.
       - name: Report what CI could not run
         if: always()
         env:
@@ -52,5 +53,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install ruff
+      # Pinned, deliberately.
+      #
+      # This said `pip install ruff` and linted with whatever defaults the
+      # newest release carried. Ruff 0.16 widened its default rule set and the
+      # build went from clean to 443 findings with no change to this project,
+      # which is a build that fails on somebody else's release schedule. The
+      # rule set itself is declared in pyproject under [tool.ruff.lint].
+      - run: pip install ruff==0.16.3
       - run: ruff check src tests

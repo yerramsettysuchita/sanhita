@@ -11,7 +11,6 @@ from sanhita.certify.ledger import Transition, diff_obligations
 from sanhita.certify.lifecycle import CertificationError, bump_version
 from sanhita.ir.enums import DayCount, RuleStatus
 from sanhita.ir.schema import CertifiedImmutableError, Deadline, DeadlineKind, EvidenceReq
-
 from tests.test_worked_example import build as build_worked_example
 
 KEY = "lifecycle-test-key"

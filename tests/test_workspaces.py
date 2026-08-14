@@ -17,11 +17,9 @@ import os
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.parse.quality import Verdict, assess
 from sanhita.workspace import UploadRejected, WorkspaceStore, check_pdf
-
+from tests.conftest import requires_corpus
 
 # --------------------------------------------------------------- upload guard
 

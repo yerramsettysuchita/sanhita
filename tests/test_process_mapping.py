@@ -14,10 +14,8 @@ from __future__ import annotations
 
 import re
 
-
-from tests.conftest import requires_corpus
-
 from sanhita.controls import ControlStore
+from tests.conftest import requires_corpus
 
 
 def _store(tmp_path) -> ControlStore:

@@ -16,7 +16,6 @@ import pytest
 
 from tests.conftest import requires_corpus, sign_in
 
-
 # ------------------------------------------------------------- the log itself
 
 

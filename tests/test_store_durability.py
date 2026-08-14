@@ -72,8 +72,8 @@ def test_a_large_payload_round_trips(tmp_path):
 
 def test_the_certification_store_survives_a_save(tmp_path):
     """End to end: a registry written through the real save path reloads."""
-    from sanhita.cli_compile import _load_registry, _save_registry
     from sanhita.certify.lifecycle import RuleRegistry
+    from sanhita.cli_compile import _load_registry, _save_registry
 
     store = tmp_path / "rules.json"
     _save_registry(RuleRegistry(), circular_id="TEST", fingerprint="f" * 64, path=store)

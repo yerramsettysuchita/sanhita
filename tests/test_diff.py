@@ -16,9 +16,6 @@ import copy
 import datetime as _dt
 import hashlib
 
-
-from tests.conftest import requires_corpus
-
 from sanhita.diff import ChangeKind, Consequence, assess_impact, diff_trees
 from sanhita.ir.enums import (
     Actor,
@@ -37,6 +34,7 @@ from sanhita.ir.schema import (
     SourceAnchor,
     Trigger,
 )
+from tests.conftest import requires_corpus
 
 
 def _rule(

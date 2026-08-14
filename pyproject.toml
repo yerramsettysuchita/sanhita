@@ -36,7 +36,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+# `httpx2` is not optional in practice either. Starlette's TestClient used to
+# accept httpx and now requires httpx2, so without it every route test raises
+# "the starlette.testclient module requires the httpx2 package" and the suite
+# collects but cannot run. CI found this; a machine with an older starlette
+# already installed does not.
+dev = ["pytest>=8.0", "httpx2>=0.28"]
 # The certification workbench. python-multipart is not optional in practice:
 # FastAPI needs it to read the certify, reject and amend forms, and without it
 # every POST in the workbench fails at request parsing.
@@ -85,3 +90,20 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+# The rule set is written down rather than inherited.
+#
+# The workflow used to `pip install ruff` unpinned and lint with whatever
+# defaults that release happened to carry. Ruff 0.16 widened its defaults and
+# the build went from clean to 443 findings without a line of this project
+# changing, which is a build that breaks on somebody else's release schedule.
+# The same reasoning already pins PyMuPDF exactly, and for a worse consequence.
+#
+# So: pin the version in the workflow, and select the rules here. These are the
+# ones this codebase was written against and holds itself to. Widening the set
+# is a deliberate change with its own commit, not something that arrives.
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sanhita", "tests"]

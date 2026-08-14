@@ -21,11 +21,9 @@ import hashlib
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.execute.applicability import Verdict, assess_applicability
-from sanhita.execute.evidence import ComplianceEvent, EvidenceStore
 from sanhita.execute.engine import RuleEngine
+from sanhita.execute.evidence import ComplianceEvent, EvidenceStore
 from sanhita.execute.report import Outcome
 from sanhita.ir.enums import (
     Actor,
@@ -47,6 +45,7 @@ from sanhita.ir.schema import (
 from sanhita.remediate import Priority, RemediationStore, TaskStatus
 from sanhita.remediate.service import recheck_task, suggested_due_date
 from sanhita.remediate.tasks import RemediationError
+from tests.conftest import requires_corpus
 
 UTC = _dt.timezone.utc
 TODAY = _dt.date(2026, 8, 11)

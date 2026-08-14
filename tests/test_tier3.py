@@ -15,8 +15,6 @@ import hashlib
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.analyse.conflicts import find_conflicts
 from sanhita.analyse.divergence import assess_divergence
 from sanhita.analyse.forecast import Outlook, build_forecast
@@ -41,6 +39,7 @@ from sanhita.ir.schema import (
     SourceAnchor,
     Trigger,
 )
+from tests.conftest import requires_corpus
 
 UTC = _dt.timezone.utc
 

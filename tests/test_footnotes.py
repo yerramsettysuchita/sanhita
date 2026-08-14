@@ -11,10 +11,8 @@ import datetime as _dt
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.parse.footnotes import extract_refs, parse_circular_date
-
+from tests.conftest import requires_corpus
 
 # --------------------------------------------------- unit, no PDF needed
 

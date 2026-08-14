@@ -35,8 +35,8 @@ def test_output_has_no_insignificant_whitespace():
 
 def test_non_ascii_is_emitted_literally():
     """Escaping would make the bytes differ from the regulation's own characters."""
-    text = canonical_json({"clause": "clientsâ€™ funds"})
-    assert "â€™" in text
+    text = canonical_json({"clause": "clients’ funds"})
+    assert "’" in text
     assert "\\u" not in text
 
 

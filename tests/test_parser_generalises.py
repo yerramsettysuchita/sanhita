@@ -21,14 +21,13 @@ from pathlib import Path
 
 import pytest
 
-from tests.conftest import ROOT, requires_corpus
-
 from sanhita.parse.layout import (
     BODY_MIN_SIZE,
     BODY_SIZE_TOLERANCE,
     body_min_size,
     load_document,
 )
+from tests.conftest import ROOT, requires_corpus
 
 
 def _corpus(name: str) -> Path | None:

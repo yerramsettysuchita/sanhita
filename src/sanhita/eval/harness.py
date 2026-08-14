@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from sanhita.compile.extract import ClauseOutcome, ExtractionStatus
-from sanhita.eval.gold import GOLD_SET, GOLD_VERSION, GoldLabel, gold_by_clause
+from sanhita.eval.gold import GOLD_SET, GOLD_VERSION
 from sanhita.metrics.coverage import classify_clause
 from sanhita.parse.clause_tree import ClauseTree
 
@@ -212,7 +212,6 @@ def run_eval(
     from sanhita.eval.rulings import read_rulings
 
     signoff = read_rulings()
-    gold = gold_by_clause()
     result = EvalResult(
         gold_set_status=signoff.state,
         gold_set_note=signoff.describe(),

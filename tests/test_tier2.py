@@ -11,9 +11,6 @@ import datetime as _dt
 import hashlib
 import json
 
-
-from tests.conftest import requires_corpus
-
 from sanhita.analyse.calendar import build_schedule
 from sanhita.analyse.receipt import build_receipt, verify_receipt
 from sanhita.analyse.rego import to_rego
@@ -35,6 +32,7 @@ from sanhita.ir.schema import (
     SourceAnchor,
     Trigger,
 )
+from tests.conftest import requires_corpus
 
 JAN = _dt.date(2026, 1, 1)
 

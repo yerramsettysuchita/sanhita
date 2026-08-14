@@ -10,9 +10,8 @@ from __future__ import annotations
 import hashlib
 import re
 
-from tests.conftest import requires_corpus
-
 from sanhita.parse.clause_tree import _classify_item, parse_clause_tree
+from tests.conftest import requires_corpus
 
 
 @requires_corpus

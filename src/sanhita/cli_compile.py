@@ -431,8 +431,13 @@ def register(app: typer.Typer, resolve, load_tree) -> None:
                     bits.append(f"{deadline.offset_hours}h")
                 if deadline.offset_months is not None:
                     bits.append(f"{deadline.offset_months}mo")
-                if deadline.business_days:
-                    bits.append("business-days")
+                # Printed by name, never as a boolean. ``DayCount`` is
+                # tri-state and every member is truthy, so `if business_days`
+                # rendered UNSPECIFIED as "business-days": the parser's
+                # assumption shown as the clause's word, which is the exact
+                # thing the tri-state exists to prevent.
+                if deadline.offset_days is not None:
+                    bits.append(f"{deadline.business_days.value.lower()} days")
                 if deadline.period:
                     bits.append(deadline.period)
                 if deadline.anchor_event:
@@ -1393,7 +1398,7 @@ def register(app: typer.Typer, resolve, load_tree) -> None:
         """
         import datetime as _d
 
-        from sanhita.execute import RuleEngine, EvidenceStore, TradingCalendar
+        from sanhita.execute import EvidenceStore, RuleEngine, TradingCalendar
         from sanhita.execute.synthetic import generate
 
         registry = _load_registry_or_exit()

@@ -11,9 +11,6 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 
-
-from tests.conftest import requires_corpus
-
 from sanhita.analyse import ConflictKind, find_conflicts
 from sanhita.analyse.conflicts import TABLE_LIKE_CHARS
 from sanhita.ir.enums import (
@@ -33,6 +30,7 @@ from sanhita.ir.schema import (
     SourceAnchor,
     Trigger,
 )
+from tests.conftest import requires_corpus
 
 
 def _rule(

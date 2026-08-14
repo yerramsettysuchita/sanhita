@@ -18,7 +18,6 @@ import pytest
 
 from tests.conftest import requires_corpus
 
-
 # ------------------------------------------------------------ the join
 
 

@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.compile.extract import ExtractionStatus, RuleExtractor
 from sanhita.eval.gold import GOLD_SET
 from sanhita.eval.harness import run_eval
 from sanhita.ir.enums import DayCount, DeadlineKind, Modality
 from sanhita.metrics.coverage import ClauseClass, classify_clause, compute_coverage
+from tests.conftest import requires_corpus
 
 CIRCULAR = "SEBI/HO/MIRSD/MIRSD-PoD/P/CIR/2025/90"
 
@@ -34,7 +33,7 @@ def test_zero_obligations_is_a_common_outcome(parsed, extractor):
     outcomes = [extractor.extract(n) for n in body]
     empty = sum(1 for o in outcomes if o.status is ExtractionStatus.NO_OBLIGATION)
     assert empty > 0.3 * len(body), "suspiciously few zero-obligation clauses"
-    assert empty < 0.9 * len(body), "suspiciously many â€” extraction may be failing silently"
+    assert empty < 0.9 * len(body), "suspiciously many — extraction may be failing silently"
 
 
 @requires_corpus
@@ -110,8 +109,8 @@ def test_clause_40_1_8_compiles_as_specified(parsed, extractor):
 
 
 def _node(text: str, clause_id: str = "9.9"):
-    from sanhita.parse.clause_tree import ClauseNode
     from sanhita.parse.anchors import clause_sha256
+    from sanhita.parse.clause_tree import ClauseNode
 
     return ClauseNode(
         id=clause_id,
@@ -185,7 +184,7 @@ def test_one_clause_can_yield_several_obligations():
 
 
 def test_the_object_is_not_the_recipient():
-    """'report to the Exchange the short-collection' â€” the duty is the reporting."""
+    """'report to the Exchange the short-collection' — the duty is the reporting."""
     outcome = RuleExtractor(circular_id=CIRCULAR).extract(
         _node(
             "The stock broker shall report to the Stock Exchange on T+5 day the actual "

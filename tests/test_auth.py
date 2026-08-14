@@ -15,10 +15,9 @@ import os
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.auth import AuthError, UserStore
 from sanhita.auth import session as sess
+from tests.conftest import requires_corpus
 
 
 @pytest.fixture

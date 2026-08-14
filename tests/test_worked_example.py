@@ -20,8 +20,6 @@ import datetime as _dt
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.ir import (
     Action,
     Actor,
@@ -29,8 +27,8 @@ from sanhita.ir import (
     Commencement,
     CommencementKind,
     Condition,
-    DayCount,
     ConditionKind,
+    DayCount,
     Deadline,
     DeadlineKind,
     EvidenceReq,
@@ -43,6 +41,7 @@ from sanhita.ir import (
     obligation_id,
     sha256_hex,
 )
+from tests.conftest import requires_corpus
 
 CIRCULAR = "SEBI/HO/MIRSD/MIRSD-PoD/P/CIR/2025/90"
 KEY = "worked-example-key"

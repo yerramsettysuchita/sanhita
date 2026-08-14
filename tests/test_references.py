@@ -15,8 +15,6 @@ import hashlib
 
 import pytest
 
-from tests.conftest import requires_corpus
-
 from sanhita.analyse.references import ReferenceGraph, build_graph
 from sanhita.diff import ChangeKind, Consequence, assess_impact
 from sanhita.diff.tree_diff import ClauseChange, TreeDiff
@@ -37,6 +35,7 @@ from sanhita.ir.schema import (
     SourceAnchor,
     Trigger,
 )
+from tests.conftest import requires_corpus
 
 
 class _Node:

@@ -1,7 +1,7 @@
 ﻿"""Temporal parsing, against phrases taken verbatim from the corpus.
 
 Every `text` below is real SEBI wording, cited by clause id. Nothing here is
-invented â€” a temporal parser validated on synthetic English proves nothing about
+invented — a temporal parser validated on synthetic English proves nothing about
 the document we actually compile.
 
 The `clause` field is the id the phrase came from, so a failure can be traced
@@ -302,7 +302,7 @@ def test_recurring_duty_with_no_stated_horizon_is_due_within_its_period():
     assert reading.recurrence == "FREQ=DAILY"
     assert reading.deadline.kind is DeadlineKind.END_OF_PERIOD
     assert reading.deadline.period == "DAY"
-    # Inferred, not read â€” so it must score below a directly-stated deadline.
+    # Inferred, not read — so it must score below a directly-stated deadline.
     assert reading.confidence < 0.9
 
 

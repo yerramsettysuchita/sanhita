@@ -699,12 +699,13 @@ it in February 2026. Both PDFs are in `corpus/`. This is a genuine amendment,
 not an edit applied by hand.
 
 ```mermaid
+%%{init: {"pie": {"textPosition": 0.9}, "themeVariables": {"pieOuterStrokeWidth": "2px"}}}%%
 pie
     title What changed between the two editions
-    "Renumbered" : 376
-    "Added" : 57
-    "Removed" : 39
-    "Modified" : 5
+    "Renumbered, 376" : 376
+    "Added, 57" : 57
+    "Removed, 39" : 39
+    "Modified, 5" : 5
 ```
 
 | | Clauses |

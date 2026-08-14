@@ -866,22 +866,21 @@ reissued it in **February 2026**. Both PDFs are in the repository. This is a
 genuine amendment, not an edit applied by hand to make a demo work.
 
 ```mermaid
-%%{init: {"pie": {"textPosition": 0.55}, "themeVariables": {"pieOuterStrokeWidth": "1px", "pieSectionTextSize": "16px", "pieLegendTextSize": "16px"}}}%%
-pie
-    title What changed between the two editions
-    "Renumbered, 376" : 376
-    "Added, 57" : 57
-    "Removed, 39" : 39
-    "Modified, 5" : 5
+xychart-beta
+    title "What changed between the two editions"
+    x-axis ["Renumbered", "Added", "Removed", "Modified"]
+    y-axis "Clauses" 0 --> 400
+    bar [376, 57, 39, 5]
 ```
 
-| Change | Clauses |
-|---|---:|
-| **Renumbered** | **376** |
-| Added | 57 |
-| Removed | 39 |
-| Modified | 5 |
-| Unchanged, keeping their number | **0** |
+| Change | Clauses | Share |
+|---|---:|---:|
+| **Renumbered** | **376** | 78.8% |
+| Added | 57 | 11.9% |
+| Removed | 39 | 8.2% |
+| Modified | 5 | 1.0% |
+| Unchanged, keeping their number | **0** | 0% |
+| **Total clauses touched** | **477** | 100% |
 
 ### The renumbering is the finding
 

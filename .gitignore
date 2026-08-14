@@ -73,16 +73,9 @@ Thumbs.db
 # All of this is real and useful and none of it belongs in a public
 # repository. It stays on this machine; it does not reach GitHub.
 
-# The assistant's standing instructions for this repository.
-CLAUDE.md
-
-# Internal notes: which deck figures were wrong and what replaced them, the
-# competition brief, prior art, open decisions, the claims register. The
-# claims register in particular lists claims marked FALSE that must not be
-# repeated, which is exactly the kind of working note that reads very badly
-# out of context.
-DECK-CORRECTIONS.md
-GOLD-SET-REVIEW.md
+# Working notes, drafts and internal review material. None of it is part of
+# the product and none of it belongs in a public repository. Individual file
+# names are kept in .git/info/exclude, which is local and never committed.
 /data/
 
 # The raw Inter download, 60 MB. The app loads `ui/fonts/*.woff2`, which is

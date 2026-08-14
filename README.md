@@ -43,7 +43,7 @@ flowchart LR
 
 Measured on the SEBI Master Circular for Stock Brokers, 17 June 2025.
 
-| | |
+| What was measured | Result |
 |---|---:|
 | Pages | 399 |
 | Clauses parsed | 1,720 |

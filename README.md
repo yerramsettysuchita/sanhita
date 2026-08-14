@@ -866,6 +866,7 @@ reissued it in **February 2026**. Both PDFs are in the repository. This is a
 genuine amendment, not an edit applied by hand to make a demo work.
 
 ```mermaid
+%%{init: {"pie": {"textPosition": 0.55}, "themeVariables": {"pieOuterStrokeWidth": "1px", "pieSectionTextSize": "16px", "pieLegendTextSize": "16px"}}}%%
 pie
     title What changed between the two editions
     "Renumbered, 376" : 376

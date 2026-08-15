@@ -96,6 +96,10 @@ class SeedResult:
     assessment_id: str = ""
     #: Editions registered so the amendment comparison has something to open.
     editions: list[str] = None
+    #: Sidecars copied to the demonstration officer's own scope, so that
+    #: account owns the demonstration rather than inheriting it from an
+    #: unscoped file. Empty when no account was seeded.
+    owned_by_officer: list[str] = None
 
     def __post_init__(self) -> None:
         if self.moved_aside is None:
@@ -129,12 +133,16 @@ def _clear_firm_data(root: Path, at: _dt.datetime) -> tuple[Path | None, list[st
     return backup, moved
 
 
-def _demo_account(root: Path) -> None:
+def _demo_account(root: Path) -> str:
     """One synthetic account, replacing whatever accounts were there.
 
     The development store carried a real personal address and two throwaways.
     A submission artifact should carry neither, and a demo needs exactly one
     identity so the recording never shows an account picker.
+
+    Returns the scope the deployment will key that account's data to, so the
+    demonstration firm can be written as **theirs** rather than left unscoped
+    for anybody to inherit. See `_own_the_demonstration`.
     """
     from sanhita.auth import UserStore
 
@@ -142,7 +150,37 @@ def _demo_account(root: Path) -> None:
     if users_path.is_file():
         users_path.unlink()
     store = UserStore(users_path)
-    store.create(email=DEMO_EMAIL, name=DEMO_OFFICER, password=DEMO_PASSWORD)
+    officer = store.create(email=DEMO_EMAIL, name=DEMO_OFFICER, password=DEMO_PASSWORD)
+    return f"u{officer.id}"
+
+
+def _own_the_demonstration(root: Path, scope: str) -> list[str]:
+    """Give the demonstration officer their own copy of the demonstration.
+
+    Reads fall through to an unscoped file so a stranger who has committed to
+    nothing still meets a working product. That fallback stops at sign-in: an
+    account means somebody came to do their own work, and answering them with
+    another firm's position is wrong however clearly it is labelled.
+
+    Which would leave the demonstration account itself looking at an empty
+    setup form, since the seeded files are unscoped and match nobody. So they
+    are copied to the officer's scope as well. The unscoped originals stay
+    exactly where they are, for the anonymous visitor they were written for.
+
+    The result is that the demonstration firm has an owner, which is also the
+    more honest data model: it is that officer's firm, not a loose file the
+    next person to arrive adopts.
+    """
+    copied: list[str] = []
+    for name in ("company.json", "evidence.json", "assessments.json",
+                 "remediation.json", "controls.json", "review.json", "plans.json"):
+        source = root / name
+        if not source.is_file():
+            continue
+        stem, _, suffix = name.rpartition(".")
+        (root / f"{stem}.{scope}.{suffix}").write_bytes(source.read_bytes())
+        copied.append(name)
+    return copied
 
 
 def _register_editions(root: Path, corpus: Path) -> list[str]:
@@ -311,7 +349,11 @@ def seed_demo_state(
     result.unverified = latest.no_evidence if latest else 0
 
     if include_account:
-        _demo_account(root)
+        # The account, and then the demonstration made over to it. Done here,
+        # after every sidecar has been written, so the copy is of the finished
+        # state rather than of whatever existed part way through.
+        scope = _demo_account(root)
+        result.owned_by_officer = _own_the_demonstration(root, scope)
     if amendment:
         result.editions = _register_editions(
             root, Path(corpus) if corpus else Path("corpus")

@@ -231,13 +231,48 @@ def test_signing_up_keeps_the_firm_they_made_anonymously(shared):
 
 
 @requires_corpus
-def test_a_signed_in_visitor_with_no_firm_still_sees_it_labelled(shared):
-    """An account is not a firm. Having one must not remove the warning."""
+def test_signing_up_stops_the_fallback_entirely(shared):
+    """The complaint that produced this rule, in one assertion.
+
+    A compliance officer creates an account, signs in, and is shown ABC
+    Securities at 94% under a heading about their compliance. Labelling it
+    helped and did not fix it: the reader came to see their own firm and was
+    answered with somebody else's.
+
+    An account is not a firm, but it is a commitment. Reads fall through to the
+    demonstration for people who have committed to nothing, and that stops the
+    moment somebody signs up. What they get instead is their own empty state,
+    which is step one of setting up, and that is the honest answer to "what is
+    my firm's position" when no firm has been recorded.
+    """
     _sign_up(shared, email="empty@example.invalid")
     page = _plain(shared.get("/w/demo/company").text)
 
+    assert "ABC Securities" not in page, (
+        "a signed-in officer was shown another firm's compliance position"
+    )
+    assert BANNER not in page
+    assert "Step 1 of 3" in page, "they were not offered their own setup"
+    assert "Whose compliance is this" in page
+
+
+@requires_corpus
+def test_the_anonymous_visitor_still_gets_the_demonstration(shared):
+    """The fallback must survive for the person it was written for."""
+    page = _plain(shared.get("/w/demo/company").text)
+
+    assert "ABC Securities" in page
     assert BANNER in page
-    assert DISCLAIMER in page
+
+
+@requires_corpus
+def test_a_signed_in_officer_keeps_their_own_empty_state_across_screens(shared):
+    """Not only the company screen. Every sidecar reads through the same rule."""
+    _sign_up(shared, email="empty2@example.invalid")
+
+    for path in ("/w/demo/company", "/w/demo/gaps", "/w/demo/review"):
+        page = _plain(shared.get(path).text)
+        assert "ABC Securities" not in page, f"{path} fell through to the demonstration"
 
 
 @requires_corpus
@@ -319,3 +354,34 @@ def test_the_demonstration_is_never_offered_for_saving(shared):
 
     assert BANNER in page
     assert "This workspace is not saved to an account" not in page
+
+
+# --------------- the demonstration officer owns the demonstration
+
+
+@requires_corpus
+def test_demo_seed_gives_the_officer_their_own_copy(tmp_path, corpus_pdf):
+    """Otherwise the fix would make the demonstration account useless.
+
+    Stopping the fallback at sign-in is right, and taken alone it would leave
+    the demonstration officer looking at an empty setup form, because the
+    seeded files are unscoped and match nobody. So `demo-seed` copies them to
+    that officer's scope: the demonstration firm gets an owner, which is also
+    the more honest data model.
+    """
+    import shutil
+
+    from sanhita.demo_seed import seed_demo_state
+
+    shutil.copy(corpus_pdf.parent.parent / ".sanhita" / "rules.json", tmp_path / "rules.json")
+    result = seed_demo_state(tmp_path, corpus=corpus_pdf.parent, backup=False)
+
+    assert result.owned_by_officer, "the officer was left with nothing of their own"
+    assert "company.json" in result.owned_by_officer
+
+    scoped = list(tmp_path.glob("company.u*.json"))
+    assert len(scoped) == 1, f"expected one scoped profile, found {scoped}"
+    assert (tmp_path / "company.json").is_file(), (
+        "the unscoped copy was moved rather than copied, so an anonymous "
+        "visitor now sees nothing"
+    )

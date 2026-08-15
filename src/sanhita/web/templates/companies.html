@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Sanhita - My companies{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <div class="t-caps t-mute">Companies</div>
+  <h1 class="t-title">Every firm you have recorded</h1>
+  <p class="t-mute">
+    A compliance officer often answers for more than one firm. Each keeps its
+    own profile, its own records, its own assessments and its own tasks, and
+    nothing is ever read across them.
+  </p>
+</div>
+
+<form method="post" action="{{ base }}/companies/new" class="cnew">
+  <button class="btn btn-solid btn-lg">Add a new company</button>
+  <span class="t-micro t-mute">
+    Opens step one with nothing filled in. A new firm never inherits the
+    records of the one you were looking at.
+  </span>
+</form>
+
+{% if not rows %}
+<div class="empty">
+  <p class="t-subhead">No firm has been recorded yet.</p>
+  <p class="t-mute">Press the button above to record the first one.</p>
+</div>
+{% else %}
+
+<ul class="colist">
+  {% for row in rows %}
+  <li class="colist-row {{ 'is-current' if row.is_current }}">
+    <div class="colist-main">
+      <div class="colist-name">
+        {{ row.name }}
+        {% if row.is_current %}<span class="badge badge-quiet">open now</span>{% endif %}
+      </div>
+      <div class="t-micro t-mute">
+        {% if row.intermediary %}{{ row.intermediary }}{% endif %}
+        {% if row.frameworks %}
+          &middot; {{ row.frameworks }} rulebook{{ 's' if row.frameworks != 1 }} declared
+        {% endif %}
+        {% if not row.set_up %} &middot; still setting up{% endif %}
+      </div>
+    </div>
+
+    <div class="colist-pos">
+      {% if row.assessed_at %}
+        {# The counts a run produced, printed as that run reported them.
+           Never recomputed here: two screens disagreeing about whether a firm
+           is compliant is the exact failure the assessment record exists to
+           end. #}
+        <div class="t-caps t-mute">Last assessed</div>
+        <div class="t-small">{{ row.assessed_at.strftime('%d %b %Y') }}</div>
+        <div class="t-micro t-mute">
+          {{ row.satisfied }} met
+          &middot; <strong>{{ row.breaches }}</strong> confirmed
+          &middot; {{ row.unverified }} not verifiable
+        </div>
+      {% else %}
+        <div class="t-caps t-mute">No position</div>
+        <div class="t-micro t-mute">Never assessed</div>
+      {% endif %}
+    </div>
+
+    <div class="colist-go">
+      {% if row.is_current %}
+        <a class="btn" href="{{ base }}/company">Open</a>
+      {% else %}
+        <form method="post" action="{{ base }}/companies/{{ row.id }}/open">
+          <button class="btn">Switch to this firm</button>
+        </form>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+
+<p class="t-micro t-mute colist-note">
+  {{ total }} firm{{ 's' if total != 1 }} on this account. Switching changes
+  which firm every other screen is about. Nothing is copied between them, and
+  no screen ever shows one firm's records under another's name.
+</p>
+{% endif %}
+
+{% endblock %}

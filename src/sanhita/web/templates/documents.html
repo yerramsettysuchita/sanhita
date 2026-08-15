@@ -101,6 +101,25 @@
   </li>
 {% endmacro %}
 
+{# Circulars shipped with this installation.
+
+   SEBI's own published documents, carrying no owner, so anybody may read them.
+   They sit above a visitor's own uploads because they are here on arrival, and
+   outside the signed-in check because nothing about them is anybody's: hiding
+   them behind an account meant an anonymous visitor could not reach the two
+   Investment Adviser editions the amendment comparison is built on. #}
+{% if shipped %}
+<div class="section-rule">
+  <span class="t-caps t-mute">Also on this installation</span>
+</div>
+<p class="t-small t-mute docs-shipped-note">
+  SEBI's own published circulars, here so the amendment comparison has both
+  sides of a real reissue to open. They belong to nobody and anyone may read
+  them.
+</p>
+<ul class="cards">{% for d in shipped %}{{ doccard(d) }}{% endfor %}</ul>
+{% endif %}
+
 {# The user's own space comes first, because on a signed-in account it is the
    part that is actually theirs, and it is honestly empty until they upload
    something. #}

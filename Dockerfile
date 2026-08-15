@@ -58,29 +58,28 @@ COPY ui/ ./ui/
 # checkout on any platform cannot reintroduce it.
 COPY --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh
 
-# The demonstration, built rather than copied.
+# The regulation ships. Nobody's firm does.
 #
-# Two things a visitor needs are deliberately kept out of the build context by
-# `.dockerignore`: `users.json`, because a repository should not carry password
-# hashes, and `workspaces/`, because those are one person's uploaded documents.
-# Excluding them left a deployed site nobody could sign in to, with one
-# document on it, so the amendment comparison said there was nothing to compare
-# against. Both were found by testing the deployment, not the code.
+# This used to run `demo-seed`, which built a synthetic firm, a filing
+# register, a recorded assessment and an account, so a visitor opened the site
+# on somebody else's compliance position. Labelling it helped and did not fix
+# it: a jury judging a compliance product should meet the product, not a
+# fixture, and every figure they saw belonged to a company that does not exist.
 #
-# So they are generated here instead, from the corpus and the rulebook already
-# in the image. Nothing secret is copied in, and the result is identical on
-# every build.
+# So the image now carries SEBI's published circulars and nothing else. The
+# stock broker master circular is copied in above, because a compiler with no
+# source file is a blank screen. This adds the two Investment Adviser editions
+# so the amendment comparison has both sides of a real reissue to open.
 #
-# The account is a published demonstration credential, printed in the README
-# and on the sign-in screen. A real deployment sets SANHITA_SIGNING_KEY to its
-# own value, which invalidates this session cookie anyway, and should delete
-# this account before it holds anybody's real data.
-RUN sanhita demo-seed --amendment --no-backup  && echo "demonstration state built into the image"
+# No account, no company, no filing register, no assessment. Whoever opens the
+# site records their own firm, which is the only honest starting point for a
+# product that assesses firms.
+RUN sanhita shelve-circulars  && echo "SEBI circulars shelved; no firm data in this image"
 
 # A second, pristine copy at a path no host disk will be mounted over. The
 # entrypoint restores from it when the live store has been shadowed empty.
-# Taken after seeding, so a restored store is a working demonstration rather
-# than a bare rulebook.
+# Taken after the circulars are shelved, so a restored store carries the
+# rulebook and the editions to compare it against rather than a bare file.
 RUN mkdir -p /app/.sanhita-dist && cp -R /app/.sanhita/. /app/.sanhita-dist/
 
 # Sessions are signed with a key derived from this. Without it, sign-up

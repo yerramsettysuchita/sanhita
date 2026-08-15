@@ -139,6 +139,33 @@ _SCOPE: contextvars.ContextVar[str] = contextvars.ContextVar(
     "sanhita_visitor_scope", default=""
 )
 
+#: Which of this visitor's firms every sidecar in this request belongs to.
+#
+# Empty for the first, which is what makes this change cost no migration: a
+# deployment already holding one firm keeps its filenames exactly as they are,
+# and only a second company ever takes a suffix.
+#
+# Separate from the visitor scope rather than folded into it, because the two
+# answer different questions and one of them is a privacy boundary. The visitor
+# scope decides whose data this is at all. This decides which of their firms.
+_COMPANY: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "sanhita_active_company", default=""
+)
+
+#: Whether this request has an account behind it.
+#
+# Set beside the scope and read by `_seeded_or`, because the two answer
+# different questions. The scope says *whose* data this is. This says whether
+# the visitor has committed to the product, and only the second one decides
+# whether reads may fall through to the demonstration.
+#
+# It could almost be inferred from the scope, which is "u{id}" when signed in
+# and an opaque token otherwise, but a token could begin with a "u" and a
+# privacy boundary is not a thing to decide with a string prefix.
+_SIGNED_IN: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "sanhita_signed_in", default=False
+)
+
 
 @dataclass
 class Workbench:
@@ -376,6 +403,26 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
             return f"u{signed_in.id}"
         return request.cookies.get(VISITOR_COOKIE, "")
 
+    def _active_company_slot(request: Request) -> str:
+        """Which of this visitor's firms every sidecar should read.
+
+        Taken from the index on disk rather than from a cookie. A cookie would
+        be a second source of truth for whose records a screen is showing, and
+        a stale one would show the wrong firm's compliance position with
+        nothing on the page looking wrong.
+
+        Empty is both the default and the first company's real slot, so a
+        visitor who has never seen this feature is unaffected.
+        """
+        from sanhita.companies import FIRST_SLOT, CompanyIndex
+
+        root = builtin_store.parent
+        scope = _SCOPE.get()
+        path = root / (f"companies.{scope}.json" if scope else "companies.json")
+        if not path.is_file():
+            return FIRST_SLOT
+        return CompanyIndex.load(path).active
+
     @app.middleware("http")
     async def gate(request: Request, call_next):
         """Close the app when auth is required, then harden every response."""
@@ -391,9 +438,15 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         if shared_deployment() and not scope:
             minted = scope = _mint_visitor_token()
         token = _SCOPE.set(scope)
+        signed = _SIGNED_IN.set(current_user(request) is not None)
+        # Which of this visitor's firms is open. Read after the scope is set,
+        # because the index itself is keyed by the visitor.
+        opened = _COMPANY.set(_active_company_slot(request))
         try:
             response = await call_next(request)
         finally:
+            _COMPANY.reset(opened)
+            _SIGNED_IN.reset(signed)
             _SCOPE.reset(token)
 
         if minted:
@@ -1273,19 +1326,31 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
                     "job": (jobs.get(ws.id).to_json() if jobs.get(ws.id) else None),
                 }
             )
-        # Split rather than merged. The worked example belongs to nobody and is
-        # open to everyone; an uploaded circular belongs to the person who
-        # uploaded it and to nobody else. Listing the two together under one
-        # heading called "your documents" claimed ownership of something that
-        # was never theirs, and hid the fact that a new account genuinely has
-        # nothing in it yet.
+        # Three groups, not two, because there are three kinds of ownership.
+        #
+        # The worked example belongs to nobody and is open to everyone. A
+        # circular somebody uploaded belongs to them alone. And between those
+        # sit the circulars shipped with the installation: SEBI's own published
+        # documents, carrying no owner, put there so the amendment comparison
+        # has both sides of a real reissue to open.
+        #
+        # Those shipped ones used to be lumped in with "your rulebooks", which
+        # was hidden behind a signed-in check. Nobody noticed while a seeded
+        # account existed to sign in as. Once the deployment stopped shipping an
+        # account, an anonymous visitor could no longer reach the two editions
+        # the strongest screen in the product needs.
         return templates.TemplateResponse(
             request,
             "documents.html",
             {
                 "nav": "documents",
                 "example": [r for r in rows if r["ws"].builtin],
-                "mine": [r for r in rows if not r["ws"].builtin],
+                "shipped": [
+                    r for r in rows if not r["ws"].builtin and r["ws"].owner is None
+                ],
+                "mine": [
+                    r for r in rows if not r["ws"].builtin and r["ws"].owner is not None
+                ],
                 "max_mb": round(MAX_UPLOAD_BYTES / (1024 * 1024)),
                 "error": error,
                 "user": current_user(request),
@@ -1973,6 +2038,10 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         )
         firm.created_at = firm.created_at or _d.datetime.now(_d.timezone.utc)
         firm.save(_company_write_path(state))
+        # The index carries a label so the list and the switcher have something
+        # to print. Refreshed here, or renaming a firm leaves the switcher
+        # naming it whatever it used to be called.
+        _remember_current_company(state)
         return RedirectResponse(f"/w/{wid}/company", status_code=303)
 
     def _framework_rows(state: Workbench, firm, request: Request) -> list[dict]:
@@ -2035,6 +2104,114 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
             firm.setup_completed_at = _d.datetime.now(_d.timezone.utc)
             firm.save(_company_write_path(state))
         return RedirectResponse(f"/w/{wid}/review", status_code=303)
+
+    # ------------------------------------------------ more than one firm
+
+    def _company_index(state: Workbench):
+        """This visitor's list of firms, with the current one recorded in it."""
+        from sanhita.companies import CompanyIndex
+
+        index = CompanyIndex.load(_company_index_path(state))
+        index.path = _company_index_path(state)
+        return index
+
+    def _remember_current_company(state: Workbench) -> None:
+        """Keep the index's idea of a firm's name in step with the profile.
+
+        The index holds a label so the list has something to print. The profile
+        holds the record. When somebody renames their firm the label goes stale
+        and the switcher starts lying about which is which, so it is refreshed
+        wherever a profile is written.
+
+        Also the migration, such as it is. A visitor who recorded a firm before
+        this feature existed has no index at all; the first time one is needed,
+        their existing files are recorded as company one and nothing moves.
+        """
+        firm = _company(state)
+        if firm is None:
+            return
+        index = _company_index(state)
+        slot = _COMPANY.get()
+        if index.get(slot) is None:
+            index.ensure_first(name=firm.name, at=firm.created_at)
+            index.active = slot if index.get(slot) else index.active
+        index.rename(slot, firm.name)
+        index.save()
+
+    @page("/companies")
+    def companies_screen(request: Request, wid: str = BUILTIN_ID):
+        """Every firm this person has recorded, and a way to add another."""
+        state = bench(wid, request)
+        _remember_current_company(state)
+        index = _company_index(state)
+
+        rows = []
+        for entry in index.slots:
+            token = _COMPANY.set(entry.slot)
+            try:
+                firm = _company(state)
+                log = _assessments(state)
+                latest = log.latest
+                rows.append(
+                    {
+                        "id": entry.id,
+                        "slot": entry.slot,
+                        "name": firm.name if firm else (entry.name or "Unnamed firm"),
+                        "intermediary": firm.intermediary.label if firm else "",
+                        "is_current": entry.slot == index.active,
+                        "set_up": bool(firm and firm.setup_completed_at),
+                        "frameworks": len(firm.frameworks) if firm else 0,
+                        "assessed_at": latest.ran_at if latest else None,
+                        "breaches": latest.breaches if latest else None,
+                        "unverified": latest.no_evidence if latest else None,
+                        "satisfied": latest.satisfied if latest else None,
+                    }
+                )
+            finally:
+                _COMPANY.reset(token)
+
+        return templates.TemplateResponse(
+            request,
+            "companies.html",
+            shell(state, "companies", request, rows=rows, total=len(rows)),
+        )
+
+    @action("/companies/new")
+    def add_company(request: Request, wid: str = BUILTIN_ID):
+        """Issue a slot for a firm nobody has recorded yet, and open it.
+
+        Nothing is copied from the firm that was open. A new company starts at
+        step one with empty records, which is the only honest starting point:
+        inheriting the last firm's evidence would put one broker's filings
+        under another broker's name.
+        """
+        import datetime as _d
+
+        state = bench(wid, request)
+        _remember_current_company(state)
+        index = _company_index(state)
+        entry = index.add(at=_d.datetime.now(_d.timezone.utc))
+        index.active = entry.slot
+        index.save()
+        return RedirectResponse(f"/w/{wid}/company", status_code=303)
+
+    @action("/companies/{company_id}/open")
+    def open_company(request: Request, wid: str = BUILTIN_ID, company_id: str = ""):
+        """Switch to one of this visitor's own firms.
+
+        Resolved through the index rather than trusted from the URL. A slot
+        typed into the address bar that this visitor does not own would
+        otherwise read another person's files, which is the one failure this
+        whole feature has to be incapable of.
+        """
+        state = bench(wid, request)
+        index = _company_index(state)
+        entry = index.by_id(company_id)
+        if entry is None:
+            raise HTTPException(404, "No such company on this account.")
+        index.open(entry.slot)
+        index.save()
+        return RedirectResponse(f"/w/{wid}/company", status_code=303)
 
     @action("/company/frameworks")
     async def save_frameworks(request: Request, wid: str = BUILTIN_ID):
@@ -4062,13 +4239,37 @@ def _sidecar(state: Workbench, name: str) -> Path:
     them seeing the other's filing register. Off a shared deployment the name is
     plain, which is what a single-user laptop should have.
     """
-    scope = _SCOPE.get()
     plain = state.store_path.with_name(name)
-    if not scope:
+    scoped = state.store_path.with_name(_scoped_name(name))
+    if scoped == plain:
         return plain
-    stem, _, suffix = name.rpartition(".")
-    scoped = state.store_path.with_name(f"{stem}.{scope}.{suffix}")
     return _seeded_or(scoped, plain)
+
+
+def _scoped_name(name: str) -> str:
+    """`evidence.json` as this visitor's, for the firm they have open.
+
+    Two dimensions, one filename, and the order matters. The visitor comes
+    first because it is the privacy boundary: everything belonging to one
+    person sorts together, and a company slot can never be read across
+    visitors. The company slot comes second and is empty for the first firm,
+    which is why a deployment already holding one needs no migration.
+
+        evidence.json                   one laptop, one firm
+        evidence.u4c55baa9.json         a visitor's first firm
+        evidence.u4c55baa9.c2.json      that visitor's second firm
+    """
+    scope = _SCOPE.get()
+    company = _COMPANY.get()
+    if not scope and not company:
+        return name
+    stem, _, suffix = name.rpartition(".")
+    parts = [stem]
+    if scope:
+        parts.append(scope)
+    if company:
+        parts.append(company)
+    return ".".join(parts) + "." + suffix
 
 
 def _seeded_or(scoped: Path, seed: Path) -> Path:
@@ -4085,7 +4286,27 @@ def _seeded_or(scoped: Path, seed: Path) -> Path:
     as such: there is nothing in it belonging to a person. A visitor's own
     records never go back into it, and one visitor's changes are never visible
     to another.
+
+    **The fallback stops at the moment somebody creates an account.**
+
+    It exists so a stranger who has committed to nothing still sees a working
+    product instead of an empty form. Someone who has signed up is no longer
+    that person. They typed their name, chose a password and came to do work,
+    and answering them with another firm's compliance position is wrong however
+    prominently it is labelled: a compliance officer signing in and being shown
+    ABC Securities at 94% has been told something about a firm that is not
+    theirs, on the screen they came to for their own.
+
+    Signed in with nothing of their own, they get their own empty state, which
+    is step one of setting up. That is the honest answer to "what is my firm's
+    position" when no firm has been recorded yet.
+
+    The demonstration firm is still there for the visitor it was built for, and
+    ``sanhita demo-seed`` gives the demonstration officer their own copy of it
+    so that account owns it outright rather than borrowing it.
     """
+    if _SIGNED_IN.get():
+        return scoped
     if scoped.exists() or not seed.is_file():
         return scoped
     return seed
@@ -4097,11 +4318,7 @@ def _writable(state: Workbench, name: str) -> Path:
     Reads may fall through to the demonstration state; writes never do. A
     visitor editing the seed would change what the next visitor opens on.
     """
-    scope = _SCOPE.get()
-    if not scope:
-        return state.store_path.with_name(name)
-    stem, _, suffix = name.rpartition(".")
-    return state.store_path.with_name(f"{stem}.{scope}.{suffix}")
+    return state.store_path.with_name(_scoped_name(name))
 
 
 def _evidence_path(state: Workbench) -> Path:
@@ -4148,17 +4365,29 @@ def _company_path(state: Workbench) -> Path:
     evidence is: a firm's name and its business facts are the firm's.
     """
     root = state.company_root or state.store_path.parent
-    scope = _SCOPE.get()
-    if not scope:
-        return root / "company.json"
-    return _seeded_or(root / f"company.{scope}.json", root / "company.json")
+    scoped = root / _scoped_name("company.json")
+    plain = root / "company.json"
+    if scoped == plain:
+        return plain
+    return _seeded_or(scoped, plain)
 
 
 def _company_write_path(state: Workbench) -> Path:
     """Where a visitor's own profile is saved. Never the seeded one."""
     root = state.company_root or state.store_path.parent
+    return root / _scoped_name("company.json")
+
+
+def _company_index_path(state: Workbench) -> Path:
+    """The list of firms one visitor has recorded.
+
+    Keyed by the visitor and **not** by the company, which is the whole point:
+    it is the thing that knows a second company exists, so it cannot live
+    inside either of them.
+    """
+    root = state.company_root or state.store_path.parent
     scope = _SCOPE.get()
-    return root / (f"company.{scope}.json" if scope else "company.json")
+    return root / (f"companies.{scope}.json" if scope else "companies.json")
 
 
 def _review(state: Workbench):

@@ -406,6 +406,58 @@ def verify(
     typer.echo(_RULE)
 
 
+@app.command("shelve-circulars")
+def shelve_circulars(
+    root: Path = typer.Option(
+        Path(".sanhita"), "--root", help="The store directory."
+    ),
+    corpus: Path = typer.Option(
+        Path("corpus"), "--corpus", help="Where the circulars are."
+    ),
+) -> None:
+    """Put SEBI's other published circulars on the shelf. Nothing else.
+
+    A deployment ships the regulation and nothing belonging to a person. The
+    stock broker master circular is already in the image because a compiler
+    with no source file is a blank screen; this adds the two Investment
+    Adviser editions so the amendment comparison has both sides of a real
+    reissue to open.
+
+    All three are SEBI's own published documents, freely downloadable, and none
+    of them says anything about a firm. No account is created, no company is
+    recorded, no filing register is written and no assessment is run. Whoever
+    opens the site records their own firm, which is the only honest starting
+    point for a product that assesses firms.
+
+    This is what `demo-seed` used to be relied on for during an image build.
+    That command still exists, for recording a walkthrough on a laptop where a
+    synthetic firm is the point.
+    """
+    from sanhita.demo_seed import _register_editions
+
+    typer.echo(_RULE)
+    typer.secho("  SANHITA SHELVE CIRCULARS", fg=typer.colors.CYAN, bold=True)
+    typer.echo(_RULE)
+
+    root.mkdir(parents=True, exist_ok=True)
+    registered = _register_editions(root, corpus)
+
+    if registered:
+        for title in registered:
+            typer.echo(f"  shelved                             {title}")
+    else:
+        typer.secho(
+            "  nothing shelved. The Investment Adviser editions were not found "
+            f"under {corpus}, so the comparison screen will have one side only.",
+            fg=typer.colors.YELLOW,
+        )
+    typer.echo()
+    typer.echo("  No account, no company, no records and no assessment were")
+    typer.echo("  created. The site opens on an empty firm, which is what a")
+    typer.echo("  visitor should meet.")
+    typer.echo(_RULE)
+
+
 @app.command("demo-seed")
 def demo_seed(
     root: Path = typer.Option(

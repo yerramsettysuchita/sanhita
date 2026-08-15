@@ -24,7 +24,7 @@ import shutil
 
 import pytest
 
-from tests.conftest import requires_corpus, sign_in
+from tests.conftest import complete_setup, requires_corpus, sign_in
 
 
 @pytest.fixture()
@@ -190,6 +190,10 @@ def test_an_assessment_of_their_own_records_is_theirs_alone(corpus_pdf, shared):
 
     client = _visitor(corpus_pdf, shared)
     sign_in(client, name="R. Nair", email="nair@example.invalid")
+    # Their own firm, because signing in stops the fallback: an account means
+    # somebody came to do their own work, so they are no longer handed the
+    # seeded demonstration to assess. This is what a real visitor now does.
+    complete_setup(client, name="Zeta Broking")
     # Their own records, so the run is genuinely a different one.
     client.post(
         "/w/demo/evidence",
@@ -208,10 +212,33 @@ def test_an_assessment_of_their_own_records_is_theirs_alone(corpus_pdf, shared):
 
 @requires_corpus
 def test_a_task_raised_by_one_visitor_is_theirs_alone(corpus_pdf, shared):
+    from sanhita.cli_compile import _load_registry
+    from sanhita.ir.enums import DeadlineKind, RuleStatus
     from sanhita.remediate import RemediationStore
 
     client = _visitor(corpus_pdf, shared)
     sign_in(client, name="R. Nair", email="nair2@example.invalid")
+    complete_setup(client, name="Zeta Broking")
+
+    # A gap of their own to remediate. This used to lean on the seeded
+    # demonstration's records, which a signed-in visitor no longer inherits, so
+    # the firm has to have something to be assessed against.
+    rule = next(
+        r
+        for r in _load_registry(shared / "rules.json").all_current()
+        if r.status is RuleStatus.CERTIFIED
+        and r.deadline is not None
+        and r.deadline.kind is DeadlineKind.END_OF_PERIOD
+        and r.evidence
+    )
+    client.post(
+        "/w/demo/evidence",
+        headers={"x-sanhita-filename": "mine.csv"},
+        content=(
+            "obligation_id,entity,occurred_on,filed_on,artifact_type,reference\n"
+            f"{rule.id},Zeta Broking,2026-01-31,,{rule.evidence[0].artifact_type},\n"
+        ).encode(),
+    )
     client.post("/w/demo/assess", follow_redirects=True)
 
     gaps = client.get("/w/demo/gaps").text

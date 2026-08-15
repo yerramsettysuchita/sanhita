@@ -130,3 +130,25 @@
 
   revealables.forEach(function (el) { observer.observe(el); });
 })();
+
+/* Dismiss the account menu.
+   A <details> stays open until its own summary is clicked again, which reads
+   as a stuck panel: you click elsewhere, the page responds, and the menu is
+   still hanging there. Close it on an outside click and on Escape, which is
+   what every other menu on the web does. */
+(function () {
+  var account = document.querySelector(".lp-account");
+  if (!account) return;
+
+  document.addEventListener("click", function (event) {
+    if (!account.open) return;
+    if (!account.contains(event.target)) account.open = false;
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape" || !account.open) return;
+    account.open = false;
+    var summary = account.querySelector("summary");
+    if (summary) summary.focus();
+  });
+})();

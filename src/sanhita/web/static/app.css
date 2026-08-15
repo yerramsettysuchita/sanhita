@@ -1894,8 +1894,13 @@ details.definition[open] summary::after { content: "\2212"; }
 .avatar-lg { width: 44px; height: 44px; font-size: var(--fs-subhead); }
 
 .account-menu {
+  /* Wide enough for a real address. At 268px the text column was 172px after
+     the avatar and padding, and an ordinary Gmail address needs about 193px,
+     so it wrapped and broke mid-word. Same fix as the landing menu, measured
+     the same way. */
   position: absolute; z-index: var(--z-sticky);
-  top: calc(100% + 10px); right: 0; min-width: 268px;
+  top: calc(100% + 10px); right: 0;
+  width: 320px; max-width: calc(100vw - 2 * var(--s-5));
   border: var(--border); border-radius: var(--r-md);
   background: var(--surface-raised);
   box-shadow: 0 18px 44px rgba(36,6,66,.16);
@@ -2062,6 +2067,14 @@ details.cite[open] summary::before { content: "\2212"; }
   max-width: 26ch;
 }
 .firmpick-name:hover { color: var(--brand); }
+/* The way to a different firm, beside the one currently open. Quiet, because
+   most people answer for one and should not be nagged about a list of one. */
+.firmpick-all {
+  color: var(--text-mute); text-decoration: none; white-space: nowrap;
+  border-bottom: 1px solid transparent;
+}
+.firmpick-all:hover { color: var(--brand-text); border-bottom-color: currentColor; }
+@media (max-width: 900px) { .firmpick-all { display: none; } }
 /* Secondary to the firm, so it is quieter than when it leads. */
 .docpick-second .docpick-d summary { background: transparent; }
 
@@ -2324,3 +2337,35 @@ details.cite[open] summary::before { content: "\2212"; }
    like a data-entry panel dropped into a list of findings. */
 .inline-form { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 .field-inline { width: 14ch; padding: var(--s-2) var(--s-3); font-size: var(--fs-micro); }
+
+/* The list of firms one person answers for.
+   A compliance officer often has several, and until this existed the product
+   held exactly one: to see a second you signed out and used another browser.
+   Each row is a firm, its last recorded position, and a way in. */
+.cnew {
+  display: flex; align-items: center; gap: var(--s-4);
+  flex-wrap: wrap; margin-bottom: var(--s-5);
+}
+.cnew .t-micro { flex: 1 1 22rem; line-height: 1.5; }
+
+.colist { list-style: none; margin: 0; padding: 0; }
+.colist-row {
+  display: flex; align-items: center; gap: var(--s-5); flex-wrap: wrap;
+  padding: var(--s-4) var(--s-5);
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-raised); margin-bottom: var(--s-3);
+}
+.colist-row.is-current { border-color: var(--brand-hair); background: var(--brand-wash); }
+.colist-main { flex: 1 1 20rem; min-width: 0; }
+.colist-name {
+  font-size: var(--fs-small); font-weight: var(--fw-medium);
+  display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap;
+}
+.colist-pos { flex: 0 0 auto; min-width: 12rem; }
+.colist-pos > div { line-height: 1.45; }
+.colist-go { flex: 0 0 auto; margin-left: auto; }
+.colist-note { margin-top: var(--s-4); line-height: 1.5; }
+
+/* The note above circulars that came with the installation rather than with
+   the visitor. Quiet, because it explains ownership rather than selling. */
+.docs-shipped-note { margin: 0 0 var(--s-4); line-height: 1.5; max-width: 60ch; }

@@ -48,6 +48,10 @@
   <div class="firmpick">
     <span class="firmpick-label t-caps t-mute">Firm</span>
     <a class="firmpick-name" href="{{ base }}/company">{{ firm.name }}</a>
+    {# One person often answers for several firms. The name in the masthead is
+       what every screen below is about, so the way to change which firm that
+       is belongs beside it rather than buried in a menu. #}
+    <a class="firmpick-all t-micro" href="{{ base }}/companies">All companies</a>
   </div>
   {% endif %}
 

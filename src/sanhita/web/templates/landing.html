@@ -35,8 +35,30 @@
      the workbench exists and that sign-in is buried inside it. #}
   <div class="lp-nav-auth">
     {% if user %}
-      <span class="lp-avatar" title="{{ user.name }} ({{ user.email }})"
-            aria-label="Signed in as {{ user.name }}">{{ user.name|trim|first|upper }}</span>
+      {# The same account menu the workbench carries.
+         This was a bare span with a title attribute, so the one place a
+         signed-in visitor lands first was the one place they could not sign
+         out from. A tooltip is not a control. #}
+      <details class="lp-account">
+        <summary aria-label="Account, signed in as {{ user.name }}">
+          <span class="lp-avatar" aria-hidden="true">{{ user.name|trim|first|upper }}</span>
+        </summary>
+        <div class="lp-account-menu">
+          <div class="lp-account-who">
+            <span class="lp-avatar lp-avatar-lg" aria-hidden="true">{{ user.name|trim|first|upper }}</span>
+            <div>
+              <div class="lp-account-name">{{ user.name }}</div>
+              <div class="lp-account-mail">{{ user.email }}</div>
+            </div>
+          </div>
+          <p class="lp-account-note">
+            This is the name that will appear against every rule you certify.
+          </p>
+          <form method="post" action="/signout">
+            <button class="lp-account-out">Sign out</button>
+          </form>
+        </div>
+      </details>
       <a class="lp-btn lp-btn-brand" href="/w/demo/company">Open the workbench</a>
     {% else %}
       <a class="lp-signin" href="/signin">Sign in</a>

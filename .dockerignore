@@ -33,6 +33,14 @@ Thumbs.db
 .sanhita/workspaces/
 .sanhita/users.json
 
+# Per-visitor copies of a firm's own data, on a shared deployment. These are
+# named `company.u<id>.json` and so on, keyed to an account id from *this*
+# machine. The image builds its own accounts, so those ids match nobody in it:
+# copying them in ships an orphan carrying one developer's demonstration state
+# that no visitor can ever reach. `demo-seed` writes the correct ones during
+# the build, scoped to the officer it creates there.
+.sanhita/*.*.json
+
 # Most of the other circulars are for local testing of the upload path.
 # Shipping all seven would add 20 MB for no benefit to a first-time visitor.
 #

@@ -272,17 +272,35 @@ def test_registering_an_edition_does_not_parse_it(store):
 
 
 @requires_corpus
-def test_the_image_builds_the_demo_account_rather_than_copying_it(store):
-    """`.dockerignore` keeps users.json out of the build context on purpose.
-    The account has to be created inside the build or the deployed site is one
-    nobody can sign in to, which is what it was."""
+def test_the_image_ships_the_regulation_and_no_firm(store):
+    """What the deployment carries, drawn at ownership rather than usefulness.
+
+    This used to assert the opposite: that the image ran `demo-seed` during its
+    build, so a visitor met a synthetic firm with a filing register, a recorded
+    assessment and an account to sign in as. Labelling it as a demonstration
+    helped and did not fix it. A jury judging a compliance product should meet
+    the product, and every figure on that first screen belonged to a company
+    that does not exist.
+
+    So SEBI's published circulars ship, because a compiler with no source file
+    is a blank screen and the amendment comparison needs both sides of a real
+    reissue. Nothing belonging to a person ships at all.
+    """
     dockerignore = (ROOT / ".dockerignore").read_text(encoding="utf-8")
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 
     assert ".sanhita/users.json" in dockerignore, "password hashes would be copied in"
     assert ".sanhita/workspaces/" in dockerignore, "somebody's uploads would be copied in"
-    assert "sanhita demo-seed --amendment" in dockerfile, (
-        "the image no longer builds its own demonstration state"
+    assert ".sanhita/*.*.json" in dockerignore, (
+        "one developer's per-visitor sidecars would be copied in"
+    )
+
+    assert "sanhita shelve-circulars" in dockerfile, (
+        "the image no longer puts SEBI's other circulars on the shelf, so the "
+        "amendment comparison opens with nothing to compare"
+    )
+    assert "demo-seed" not in dockerfile.replace("`demo-seed`", ""), (
+        "the image is seeding a synthetic firm again"
     )
 
 

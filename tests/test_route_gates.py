@@ -247,20 +247,42 @@ def test_a_set_up_firm_can_still_be_assessed_after_an_edit(client):
 
 @pytest.fixture()
 def shared(corpus_pdf, tmp_path, monkeypatch):
-    """A shared deployment that already carries the seeded demonstration firm."""
+    """A shared deployment carrying a seeded demonstration firm.
+
+    Built here rather than copied off this machine. The first version took
+    `.sanhita/company.json` from the working directory behind an `if it
+    exists` guard. That file is deliberately not in the repository, so on CI
+    the guard skipped, no demonstration firm existed, and the two tests below
+    passed without exercising anything: with nothing to inherit from, a new
+    visitor's firm cannot inherit wrongly.
+
+    A test that passes because the situation it describes never arose is worse
+    than one that fails, so the situation is constructed and asserted.
+    """
+    import datetime as _dt
     import shutil
 
     from fastapi.testclient import TestClient
 
+    from sanhita.company import Company, IntermediaryType
     from sanhita.web.app import create_app
 
     monkeypatch.setenv("SANHITA_SIGNING_KEY", "a-test-only-key")
     monkeypatch.setenv("SANHITA_SHARED", "1")
-    seeded = corpus_pdf.parent.parent / ".sanhita"
     store = tmp_path / "rules.json"
-    shutil.copy(seeded / "rules.json", store)
-    if (seeded / "company.json").exists():
-        shutil.copy(seeded / "company.json", tmp_path / "company.json")
+    shutil.copy(corpus_pdf.parent.parent / ".sanhita" / "rules.json", store)
+
+    stamp = _dt.datetime(2026, 8, 1, tzinfo=_dt.timezone.utc)
+    Company(
+        name="ABC Securities Pvt Ltd",
+        intermediary=IntermediaryType.STOCK_BROKER,
+        frameworks=["demo"],
+        setup_completed_at=stamp,
+        created_at=stamp,
+        synthetic=True,
+    ).save(tmp_path / "company.json")
+    assert (tmp_path / "company.json").is_file(), "the demonstration firm was not seeded"
+
     return TestClient(create_app(corpus_pdf, store=store))
 
 

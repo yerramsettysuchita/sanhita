@@ -33,6 +33,7 @@ Three states, and the tests below hold all three:
 
 from __future__ import annotations
 
+import datetime as _dt
 import re
 import shutil
 
@@ -47,23 +48,45 @@ CTA = "Start my company's compliance"
 
 @pytest.fixture()
 def shared(corpus_pdf, tmp_path, monkeypatch):
-    """A shared deployment carrying the seeded demonstration firm.
+    """A shared deployment carrying a seeded demonstration firm.
 
-    The only configuration where the fallback happens at all, and therefore
-    the only one where this defect could occur.
+    The firm is **built here**, not copied off this machine.
+
+    The first version of this fixture copied `.sanhita/company.json` from the
+    working directory, guarded by `if it exists`. On a laptop that has run
+    `sanhita demo-seed` it exists, so the tests passed. It is not in the
+    repository and never will be, because a firm's profile does not belong in
+    version control, so on CI the guard silently skipped and every assertion
+    about the banner then failed against a screen that had no firm on it at
+    all.
+
+    Tests that pass locally for a reason that does not hold anywhere else are
+    worse than tests that fail, so this builds exactly the state it needs and
+    asserts it landed.
     """
     from fastapi.testclient import TestClient
 
+    from sanhita.company import Company, IntermediaryType
     from sanhita.web.app import create_app
 
     monkeypatch.setenv("SANHITA_SIGNING_KEY", "a" * 64)
     monkeypatch.setenv("SANHITA_SHARED", "1")
-    seeded = corpus_pdf.parent.parent / ".sanhita"
+
     store = tmp_path / "rules.json"
-    shutil.copy(seeded / "rules.json", store)
-    for name in ("company.json", "evidence.json", "assessments.json"):
-        if (seeded / name).exists():
-            shutil.copy(seeded / name, tmp_path / name)
+    shutil.copy(corpus_pdf.parent.parent / ".sanhita" / "rules.json", store)
+
+    # The unscoped profile: what a visitor with no copy of their own reads.
+    seeded = Company(
+        name="ABC Securities Pvt Ltd",
+        intermediary=IntermediaryType.STOCK_BROKER,
+        frameworks=["demo"],
+        setup_completed_at=_dt.datetime(2026, 8, 1, tzinfo=_dt.timezone.utc),
+        created_at=_dt.datetime(2026, 8, 1, tzinfo=_dt.timezone.utc),
+        synthetic=True,
+    )
+    seeded.save(tmp_path / "company.json")
+    assert (tmp_path / "company.json").is_file(), "the demonstration firm was not seeded"
+
     return TestClient(create_app(corpus_pdf, store=store))
 
 

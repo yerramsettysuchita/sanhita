@@ -37,11 +37,27 @@ import pytest
 
 from tests.conftest import requires_corpus
 
-# The four the form must never reach. Kept here as a literal rather than
-# derived, so this file disagrees with the model when the model changes.
-OWNED_ELSEWHERE = frozenset(
-    {"frameworks", "setup_completed_at", "created_at", "synthetic"}
-)
+# The four the form must never reach, and who owns each instead.
+#
+# A name, not just an exclusion. "Not on the form" is not a reason, and a set
+# of bare strings invites the next person to add one to make a failing test
+# pass. Naming the owner forces the real question: if nothing owns this field,
+# what writes it, and why is it on Company at all?
+#
+# Kept here as a literal rather than derived from the model, so this file
+# disagrees with the model when the model changes. A test that reads its
+# expectations out of the thing under test cannot fail.
+OWNED_BY = {
+    "frameworks": "the frameworks screen, /company/frameworks. Which rulebook "
+                  "governs a firm is a legal declaration, not a profile detail",
+    "setup_completed_at": "onboarding, /setup/complete. Stamped once, when the "
+                          "third answer is given",
+    "created_at": "the first save. Set when the profile does not exist yet and "
+                  "never rewritten",
+    "synthetic": "the demonstration seeder. True only on the worked example, "
+                 "and printed wherever the profile is shown",
+}
+OWNED_ELSEWHERE = frozenset(OWNED_BY)
 
 
 # ------------------------------------------------------- the structural rule
@@ -73,11 +89,31 @@ def test_every_field_belongs_to_exactly_one_half():
     assert not stale, f"{sorted(stale)} is claimed by a half but is not on Company"
 
 
-def test_the_form_cannot_reach_the_other_half():
-    """The two halves do not overlap, or the split says nothing."""
+def test_no_field_is_claimed_by_both_halves():
+    """Ambiguous ownership is worse than none, because it reads as settled.
+
+    A field in both halves means the form may write it *and* something else
+    owns it, which is the original defect wearing a label that says it was
+    considered. The failure names the field rather than printing both sets.
+    """
     from sanhita.company import Company
 
-    assert not (set(Company.FORM_FIELDS) & set(OWNED_ELSEWHERE))
+    both = sorted(set(Company.FORM_FIELDS) & set(OWNED_ELSEWHERE))
+    assert not both, (
+        f"{both} is claimed by the profile form and by "
+        f"{'; '.join(OWNED_BY[f] for f in both)}. One of the two is wrong: "
+        "either the form owns it and it is not owned elsewhere, or it is not "
+        "on the form and must come out of Company.FORM_FIELDS."
+    )
+
+
+def test_every_preserved_field_names_who_owns_it():
+    """'Not on the form' is an exclusion. This asks for the reason."""
+    for name, owner in OWNED_BY.items():
+        assert owner and len(owner) > 20, (
+            f"{name!r} is preserved but its owner is not described. Say what "
+            "writes it and when, or reconsider whether it belongs on Company."
+        )
 
 
 def test_applying_the_form_leaves_the_other_half_alone():

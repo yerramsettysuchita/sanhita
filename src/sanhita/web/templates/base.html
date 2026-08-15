@@ -65,13 +65,42 @@
         <span class="docpick-name">{{ workspace.name }}</span>
       </summary>
       <div class="docpick-menu">
-        {% for d in documents %}
-        <a class="docpick-item {{ 'is-current' if d.id == wid }}" href="/w/{{ d.id }}">
-          <span class="docpick-item-n">{{ d.name }}</span>
-          <span class="t-micro t-mute">{{ 'worked example' if d.builtin else d.source_name }}</span>
-        </a>
-        {% endfor %}
-        <a class="docpick-add" href="/documents">Bring your own circular</a>
+        {#
+          Two questions, one control, and they must not be confused.
+
+          On a firm's screen this asks "which of the rulebooks governing us am
+          I looking at", so it offers only what the firm declared and each
+          entry stays inside the firm's context. It used to list every rulebook
+          on the installation and link to `/w/<id>`, the regulatory workspace,
+          so changing framework on an assessment screen dropped a compliance
+          officer into a circular nobody had said applied to them.
+
+          On a regulatory screen it asks "which document am I authoring
+          against", and that is unchanged: everything here, each to its own
+          workspace.
+        #}
+        {% if company_context and firm %}
+          {% for d in declared_frameworks %}
+          <a class="docpick-item {{ 'is-current' if d.id == wid }}" href="/w/{{ d.id }}/company">
+            <span class="docpick-item-n">{{ d.name }}</span>
+            <span class="t-micro t-mute">declared by {{ firm.name }}</span>
+          </a>
+          {% endfor %}
+          {% if not declared_frameworks %}
+          <div class="docpick-none t-micro t-mute">
+            {{ firm.name }} has not declared a rulebook yet.
+          </div>
+          {% endif %}
+          <a class="docpick-add" href="{{ base }}/company#frameworks">Change which apply</a>
+        {% else %}
+          {% for d in documents %}
+          <a class="docpick-item {{ 'is-current' if d.id == wid }}" href="/w/{{ d.id }}">
+            <span class="docpick-item-n">{{ d.name }}</span>
+            <span class="t-micro t-mute">{{ 'worked example' if d.builtin else d.source_name }}</span>
+          </a>
+          {% endfor %}
+          <a class="docpick-add" href="/documents">Bring your own circular</a>
+        {% endif %}
       </div>
     </details>
   </div>

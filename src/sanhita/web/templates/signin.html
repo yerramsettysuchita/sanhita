@@ -44,9 +44,35 @@
 
       <label class="authfield">
         <span class="t-caps">Password</span>
-        <input class="field" type="password" name="password" required
-               autocomplete="{{ 'new-password' if mode == 'signup' else 'current-password' }}"
-               minlength="{{ 10 if mode == 'signup' else 1 }}">
+        {# Shown on request.
+
+           A passphrase of a few words is stronger than a short jumble, and is
+           also the kind of thing people mistype and cannot check. Hiding it
+           unconditionally makes a long password harder to use than a weak one,
+           which is the wrong incentive on the screen that asks for one.
+
+           The control is a button, not a checkbox styled as one, so Enter and
+           Space both work and neither submits the form. The value is never
+           touched: only the input's type changes. #}
+        <span class="pwwrap">
+          <input class="field" type="password" name="password" id="pw" required
+                 autocomplete="{{ 'new-password' if mode == 'signup' else 'current-password' }}"
+                 minlength="{{ 10 if mode == 'signup' else 1 }}">
+          <button type="button" class="pweye" id="pweye"
+                  aria-controls="pw" aria-pressed="false" aria-label="Show password">
+            <svg class="pweye-on" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <path d="M1.6 12S5.3 5.4 12 5.4 22.4 12 22.4 12 18.7 18.6 12 18.6 1.6 12 1.6 12Z"/>
+              <circle cx="12" cy="12" r="3.1"/>
+            </svg>
+            <svg class="pweye-off" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" aria-hidden="true" hidden>
+              <path d="M1.6 12S5.3 5.4 12 5.4c1.6 0 3 .4 4.2 1M22.4 12S18.7 18.6 12 18.6c-1.6 0-3-.4-4.2-1"/>
+              <path d="M9.9 9.9a3.1 3.1 0 0 0 4.2 4.2"/>
+              <path d="M3 3l18 18"/>
+            </svg>
+          </button>
+        </span>
         {% if mode == 'signup' %}
           <span class="t-micro t-mute">
             At least 10 characters. A passphrase of a few words is stronger than
@@ -78,4 +104,34 @@
     </p>
   </div>
 </div>
+
+<script>
+/* The password toggle.
+   Vanilla, inline, and about fifteen lines, because a visibility toggle is not
+   worth a dependency and this product ships no CDN. Nothing here reads or
+   writes the password value; it changes the input's type and the label the
+   button announces itself with. */
+(function () {
+  var field = document.getElementById("pw");
+  var button = document.getElementById("pweye");
+  if (!field || !button) return;
+
+  var open = button.querySelector(".pweye-on");
+  var shut = button.querySelector(".pweye-off");
+
+  button.addEventListener("click", function () {
+    var showing = field.type === "text";
+    field.type = showing ? "password" : "text";
+    button.setAttribute("aria-pressed", showing ? "false" : "true");
+    button.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+    open.hidden = !showing;
+    shut.hidden = showing;
+    /* Put the caret back where it was, or the field scrolls to the start and
+       somebody checking the end of a passphrase loses their place. */
+    var at = field.value.length;
+    field.focus();
+    field.setSelectionRange(at, at);
+  });
+})();
+</script>
 {% endblock %}

@@ -2369,3 +2369,25 @@ details.cite[open] summary::before { content: "\2212"; }
 /* The note above circulars that came with the installation rather than with
    the visitor. Quiet, because it explains ownership rather than selling. */
 .docs-shipped-note { margin: 0 0 var(--s-4); line-height: 1.5; max-width: 60ch; }
+
+/* A firm that has declared no rulebook has nothing to switch between, and an
+   empty menu reads as broken rather than as empty. */
+.docpick-none { padding: var(--s-3) var(--s-4); line-height: 1.5; }
+
+/* The password field and its reveal.
+   The button sits inside the field's box rather than beside it, so the control
+   reads as part of the input the way every other login on the web does. It is
+   positioned rather than floated, because a floated button leaves the text
+   running underneath it at long passphrases. */
+.pwwrap { position: relative; display: block; }
+.pwwrap .field { width: 100%; padding-right: 44px; }
+.pweye {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0;
+  border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--text-mute); cursor: pointer;
+}
+.pweye:hover { color: var(--text); background: var(--surface-sunken); }
+.pweye:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.pweye svg { display: block; }

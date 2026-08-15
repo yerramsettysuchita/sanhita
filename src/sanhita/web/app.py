@@ -491,13 +491,14 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
         user = current_user(request) if request is not None else None
         firm = _company(state)
         setup_step = _setup_step(state, firm)
+        visible = workspaces.visible_to(user.id if user else None)
         return {
             "nav": nav,
             "wid": state.workspace.id,
             "base": f"/w/{state.workspace.id}",
             "workspace": state.workspace,
             "quality": state.quality,
-            "documents": workspaces.visible_to(user.id if user else None),
+            "documents": visible,
             "job": job.to_json() if job else None,
             "user": user,
             "any_users": users.any_users,
@@ -511,6 +512,24 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
             # compliance screen introduced itself as a rulebook.
             "firm": firm,
             "company_context": nav in COMPANY_PAGES,
+            # Which rulebooks the switcher may offer, and where each one leads.
+            #
+            # On a firm's screen those are the frameworks that firm declared,
+            # and each leads back to a firm screen. The switcher used to list
+            # every rulebook on the installation and link to `/w/<id>`, which
+            # is the regulatory workspace, so a compliance officer changing
+            # framework on their own assessment screen was dropped into a
+            # document nobody had said governed them. Two different questions
+            # wearing one control.
+            #
+            # On a regulatory screen it stays exactly as it was: every rulebook
+            # here, each leading to its own workspace. That is the analyst's
+            # job and the analyst's context.
+            "declared_frameworks": (
+                [d for d in visible if firm and d.id in (firm.frameworks or [])]
+                if nav in COMPANY_PAGES and firm
+                else []
+            ),
             # Onboarding and the ongoing lifecycle are different modes and
             # must never be on screen together: "Step 1 of 3" above "Stage 1
             # of 5" leaves somebody unable to say which journey they are on.

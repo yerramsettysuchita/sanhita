@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Sanhita - My Firm{% endblock %}
+{% block title %}Sanhita - {% if is_demonstration %}Demonstration workspace{% else %}My Firm{% endif %}{% endblock %}
 
 {# The profile form, defined once and placed differently depending on whether
    there is a firm yet. Setting up, it is the whole page. Afterwards it is the
@@ -116,6 +116,66 @@
 {% endmacro %}
 
 {% block content %}
+
+{% if is_demonstration %}
+{# The firm below is the seeded example, not this visitor's.
+
+   Reads fall through to the demonstration state so a first-time visitor meets
+   a working assessment instead of an empty form, which is worth keeping. What
+   was wrong is that the page then called it "My Firm" and printed 94% beside
+   it. Every figure was labelled synthetic, so nothing said was false, but the
+   page as a whole told a stranger that somebody else's position was theirs.
+
+   Said once, at the top, before any of it. #}
+<div class="demobanner">
+  <div class="demobanner-body">
+    <p class="t-caps demobanner-tag">Demonstration workspace</p>
+    <p class="t-subhead demobanner-head">
+      {{ company.name }} is a synthetic example showing how Sanhita assesses a
+      regulated intermediary.
+    </p>
+    <p class="demobanner-not"><strong>This is not your firm's data.</strong></p>
+    <p class="t-small t-mute">
+      Every figure below is computed from SEBI's real circular, against filing
+      records that were generated rather than filed. Read it to see the shape
+      of the product, then bring your own.
+    </p>
+  </div>
+  <div class="demobanner-go">
+    <a class="btn btn-solid" href="{{ base }}/company?start=1">Start my company's compliance</a>
+    <a class="btn" href="#demo-position">Explore the demonstration</a>
+  </div>
+</div>
+{% endif %}
+
+{% if company and not is_demonstration and not user %}
+{# This firm exists but belongs to nobody yet.
+
+   Anonymous onboarding is deliberate: somebody should be able to try the
+   product before committing to it, and `web/adopt.py` carries the work across
+   when they sign up. But until they do, the workspace is keyed to a cookie,
+   and a cookie is not an identity. Two things follow, and both are said here
+   rather than discovered later.
+
+   The work is not safely theirs. Clear the cookie and it is unreachable.
+
+   And no compliance act can be recorded against it, because an assessment
+   nobody's name is on is not an audit trail. That is not a wall put up to
+   force a sign-up; it is the whole reason the product asks who you are. #}
+<div class="claimbox">
+  <div>
+    <p class="t-caps t-mute">This workspace is not saved to an account</p>
+    <p class="t-subhead claimbox-head">{{ company.name }} is yours on this browser only.</p>
+    <p class="t-small t-mute">
+      Create an account to keep it, and to run an assessment. Recording a
+      compliance position, raising a task or certifying a rule all put a named
+      person against the act, which is what makes the audit trail worth having.
+      Nothing you have entered is lost when you do; it moves with you.
+    </p>
+  </div>
+  <a class="btn btn-solid" href="/signup">Save this workspace</a>
+</div>
+{% endif %}
 
 {% if not company %}
 {# One question at a time.
@@ -250,10 +310,12 @@
 </div>
 
 {% else %}
-<div class="page-head">
+<div class="page-head" id="demo-position">
   <div class="cohead">
     <div>
-      <div class="t-caps t-mute">Stage 1 of 5</div>
+      <div class="t-caps t-mute">
+        {% if is_demonstration %}The demonstration firm{% else %}Stage 1 of 5{% endif %}
+      </div>
       <h1 class="t-title">{{ company.name }}</h1>
       <p class="t-mute cohead-sub">
         {{ company.intermediary.label }}

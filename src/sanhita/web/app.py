@@ -1702,7 +1702,7 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
     # This is that view, and every figure on it is computed from stored data.
 
     @page("/company")
-    def company_screen(request: Request, wid: str = BUILTIN_ID):
+    def company_screen(request: Request, wid: str = BUILTIN_ID, start: int = 0):
         """Company X's compliance position, in one screen."""
         import datetime as _d
 
@@ -1712,6 +1712,26 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
 
         state = bench(wid, request)
         company = _company(state)
+
+        # Whose firm is this, actually?
+        #
+        # Reads fall through to the demonstration state, so on the shared
+        # deployment a visitor with no profile of their own is handed the
+        # seeded firm. That is deliberate and worth keeping: a judge opening
+        # the URL should meet a working assessment rather than an empty form.
+        #
+        # What was wrong is that the screen then called it "My Firm" and
+        # printed 94% beside it. The figures were labelled synthetic, so
+        # nothing said was false, but the page as a whole told a stranger that
+        # somebody else's position was theirs.
+        #
+        # So the distinction is made here, in the data, and the template is
+        # told which of the two it is holding. `?start=1` is how a visitor
+        # says "not that one, mine", and it renders step one over the top.
+        showing_own_profile = _company_write_path(state).exists()
+        is_demonstration = company is not None and not showing_own_profile
+        if start and is_demonstration:
+            company = None
         rules = state.registry.all_current()
         certified = [o for o in rules if o.status is RuleStatus.CERTIFIED]
 
@@ -1838,6 +1858,10 @@ def create_app(pdf: Path, *, store: Path | None = None) -> FastAPI:
                 "company",
                 request,
                 company=company,
+                #: True when the firm on screen is the seeded demonstration
+                #: rather than this visitor's own. The template must not call
+                #: it "My Firm" when this is set.
+                is_demonstration=is_demonstration and not start,
                 # Asked on the firm's behalf on every load, rather than waiting
                 # for somebody to remember the comparison screen exists.
                 watch=_regulatory_watch(state, company, request),

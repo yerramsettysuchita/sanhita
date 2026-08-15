@@ -1819,6 +1819,47 @@ details.definition[open] summary::after { content: "\2212"; }
   padding: var(--s-3) var(--s-4); margin-bottom: var(--s-4);
   font-size: var(--fs-small); line-height: 1.5;
 }
+/* The demonstration banner.
+   Reads fall through to the seeded firm so a first-time visitor meets a
+   working assessment rather than an empty form. This is what stops them
+   reading it as their own: said once, at the top, before any of the figures,
+   with the way out of it as the primary action. */
+.demobanner {
+  display: flex; flex-wrap: wrap; gap: var(--s-5);
+  align-items: flex-start; justify-content: space-between;
+  border: var(--hair-w) solid var(--brand-hair); border-radius: var(--r-md);
+  background: var(--brand-wash);
+  padding: var(--s-4) var(--s-5); margin-bottom: var(--s-5);
+}
+.demobanner-body { flex: 1 1 26rem; min-width: 0; }
+.demobanner-body > p { margin: 0 0 var(--s-2); }
+.demobanner-body > p:last-child { margin-bottom: 0; }
+.demobanner-tag { color: var(--brand-text); letter-spacing: .08em; }
+.demobanner-head { line-height: 1.4; }
+.demobanner-not { font-size: var(--fs-small); }
+.demobanner-go {
+  display: flex; flex-direction: column; gap: var(--s-2);
+  flex: 0 0 auto;
+}
+@media (max-width: 40rem) {
+  .demobanner-go { width: 100%; }
+}
+
+/* An anonymous workspace, and the offer to keep it. Quieter than the
+   demonstration banner: this firm really is theirs, it is just held on a
+   cookie and cannot carry a name on a compliance act yet. */
+.claimbox {
+  display: flex; flex-wrap: wrap; gap: var(--s-4);
+  align-items: center; justify-content: space-between;
+  border: var(--border); border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  padding: var(--s-4) var(--s-5); margin-bottom: var(--s-5);
+}
+.claimbox > div { flex: 1 1 26rem; min-width: 0; }
+.claimbox p { margin: 0 0 var(--s-2); }
+.claimbox p:last-child { margin-bottom: 0; }
+.claimbox-head { line-height: 1.4; }
+
 .authswap { margin: var(--s-5) 0 0; }
 .authswap a, .authnote a { color: var(--brand-text); }
 .authnote {
